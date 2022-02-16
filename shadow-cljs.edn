@@ -5,6 +5,7 @@
                 [gnl/ghostwheel "0.3.9"]
                 [gnl/ghostwheel.tracer "0.3.9"]
                 [cider/cider-nrepl "0.24.0"]
+                [org.clojure/test.check "0.10.0"]
                 [nrepl "0.8.3"]
                 [reagent "1.1.0"]]
  :builds       {:app {:target     :browser
