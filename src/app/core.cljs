@@ -1,15 +1,14 @@
 (ns app.core
   (:require
    [spec-tools.data-spec :as ds]
-   [clojure.test.check.generators]
    [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
-   ; [cljs.spec.gen.alpha :as gen]
    [clojure.test.check.generators :as gen]
    [cljs.spec.alpha :as s]
    [reagent.core :as r]
    [clojure.set :refer [union]]
    [reagent.dom :as d]))
 
+(+ 2 3)
 
 (s/def ::key int?)
 
@@ -38,6 +37,12 @@
   (reduce union
           (into #{} (map #(map :metric-key (:values %))
                          samples))))
+
+(def example-sample (gen/generate (s/gen ::sample)))
+
+(identity example-sample)
+
+(get-unique-metric-keys [example-sample])
 
 (def run
   "A single sample containing values for one or more metrics."
@@ -73,8 +78,7 @@
   [::run => int?]
   (count
     (:values
-      (:samples
-        run))))
+      (first (:samples run)))))
   ; (->
   ;   run
   ;   :samples
@@ -84,7 +88,31 @@
 
 (gen/generate (s/gen ::run))
 
-; (get-num-metrics gened-run)
+(get-num-metrics
+  {:key 13715898,
+   :samples
+   [{:key 887,
+     :timestamp 28322386,
+     :values
+     [{:metric-key "U7", :value 27.5201416015625}
+      {:metric-key "4T", :value 0.005859375}
+      {:metric-key "NK", :value -341.4375}
+      {:metric-key "X4", :value -3.8235781118273735}
+      {:metric-key "J7", :value 2.75}
+      {:metric-key "XA", :value -0.10807444108650088}
+      {:metric-key "ZK", :value -0.08721224777400494}
+      {:metric-key "mH", :value -0.055554993683472276}]}
+    {:key -334230,
+     :timestamp 721,
+     :values
+     [{:metric-key "U7", :value 12}
+      {:metric-key "4T", :value -74.36975002288818}
+      {:metric-key "NK", :value -83.7981185913086}
+      {:metric-key "X4", :value 44}
+      {:metric-key "J7", :value -15}
+      {:metric-key "XA", :value -0.022010681335814297}
+      {:metric-key "ZK", :value -79.598876953125}
+      {:metric-key "mH", :value 405.9689917564392}]}]})
   
 
 
