@@ -1,4 +1,4 @@
-(ns app.core
+(ns website-helpers.core
   (:require
    [reagent.core :as r]
    [reagent.dom :as d]
@@ -7,11 +7,6 @@
    [malli.dev.cljs]
    [malli.dev.pretty :as pretty]))
 
-
-(defn is-5?
-  {:malli/schema [:=> [:cat :number] :boolean]}
-  [n]
-  (= 5 n))
 
 (def Hiccup [:vector :any])
 

@@ -6,4 +6,4 @@
 (def app (wrap-resource identity "public"))
 
 (defn cljs []
-  (shadow/repl :app))
+  (shadow/repl :website_helpers))
