@@ -10,7 +10,12 @@
       <h3>ClojureScript has not been compiled!</h3>
       <p>please run <b>npx shadow-cljs watch app</b> in order to start the compiler</p>
     </div>
+    <div id="aggregator"></div>
     <script src="/js/website_helpers.js" type="text/javascript"></script>
-    <script type="text/javascript">website_helpers.core.init_BANG_();</script>
+    <script type="text/javascript">
+      website_helpers.core.render_to_element(
+          website_helpers.core.list_to_hiccup(["a", "b"]), "aggregator");
+      website_helpers.core.init_BANG_();
+    </script>
   </body>
 </html>
