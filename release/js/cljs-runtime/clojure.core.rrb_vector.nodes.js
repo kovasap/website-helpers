@@ -23,10 +23,10 @@ while(true){
 if((r < cnt)){
 (rngs[i] = r);
 
-var G__58426 = (i + (1));
-var G__58427 = (r + step);
-i = G__58426;
-r = G__58427;
+var G__69747 = (i + (1));
+var G__69748 = (r + step);
+i = G__69747;
+r = G__69748;
 continue;
 } else {
 (rngs[i] = cnt);
@@ -51,12 +51,12 @@ var or__4253__auto__ = (shift === (5));
 if(or__4253__auto__){
 return or__4253__auto__;
 } else {
-var G__58430 = (root.arr[(slc - (1))]);
-var G__58431 = (shift - (5));
-var G__58432 = (((rngs[(31)]) - (rngs[(30)])) + (32));
-root = G__58430;
-shift = G__58431;
-cnt = G__58432;
+var G__69749 = (root.arr[(slc - (1))]);
+var G__69750 = (shift - (5));
+var G__69751 = (((rngs[(31)]) - (rngs[(30)])) + (32));
+root = G__69749;
+shift = G__69750;
+cnt = G__69751;
 continue;
 }
 } else {
@@ -83,16 +83,16 @@ return (32);
 } else {
 var mid = (l + ((h - l) >> (1)));
 if((((arr[mid]) | (0)) === (0))){
-var G__58435 = l;
-var G__58436 = mid;
-l = G__58435;
-h = G__58436;
+var G__69767 = l;
+var G__69768 = mid;
+l = G__69767;
+h = G__69768;
 continue;
 } else {
-var G__58437 = (mid + (1));
-var G__58438 = h;
-l = G__58437;
-h = G__58438;
+var G__69769 = (mid + (1));
+var G__69770 = h;
+l = G__69769;
+h = G__69770;
 continue;
 }
 }
@@ -116,16 +116,16 @@ return (32);
 } else {
 var mid = (l + ((h - l) >> (1)));
 if(((arr[mid]) == null)){
-var G__58440 = l;
-var G__58441 = mid;
-l = G__58440;
-h = G__58441;
+var G__69772 = l;
+var G__69773 = mid;
+l = G__69772;
+h = G__69773;
 continue;
 } else {
-var G__58442 = (mid + (1));
-var G__58443 = h;
-l = G__58442;
-h = G__58443;
+var G__69774 = (mid + (1));
+var G__69775 = h;
+l = G__69774;
+h = G__69775;
 continue;
 }
 }
@@ -153,30 +153,30 @@ var new_arr = (new Array(((r_QMARK_)?(32):(33))));
 cljs.core.array_copy(arr,(1),new_arr,(0),(31));
 
 if((!(r_QMARK_))){
-var rngs_58447 = clojure.core.rrb_vector.nodes.node_ranges(parent);
-var rng0_58448 = (rngs_58447[(0)]);
-var new_rngs_58449 = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
-var lim_58450 = (rngs_58447[(32)]);
-cljs.core.array_copy(rngs_58447,(1),new_rngs_58449,(0),(lim_58450 - (1)));
+var rngs_69776 = clojure.core.rrb_vector.nodes.node_ranges(parent);
+var rng0_69777 = (rngs_69776[(0)]);
+var new_rngs_69778 = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
+var lim_69779 = (rngs_69776[(32)]);
+cljs.core.array_copy(rngs_69776,(1),new_rngs_69778,(0),(lim_69779 - (1)));
 
-var i_58453 = (0);
+var i_69780 = (0);
 while(true){
-if((i_58453 < lim_58450)){
-(new_rngs_58449[i_58453] = ((new_rngs_58449[i_58453]) - rng0_58448));
+if((i_69780 < lim_69779)){
+(new_rngs_69778[i_69780] = ((new_rngs_69778[i_69780]) - rng0_69777));
 
-var G__58454 = (i_58453 + (1));
-i_58453 = G__58454;
+var G__69781 = (i_69780 + (1));
+i_69780 = G__69781;
 continue;
 } else {
 }
 break;
 }
 
-(new_rngs_58449[(32)] = ((rngs_58447[(32)]) - (1)));
+(new_rngs_69778[(32)] = ((rngs_69776[(32)]) - (1)));
 
-(new_rngs_58449[((rngs_58447[(32)]) - (1))] = (0));
+(new_rngs_69778[((rngs_69776[(32)]) - (1))] = (0));
 
-(new_arr[(32)] = new_rngs_58449);
+(new_arr[(32)] = new_rngs_69778);
 } else {
 }
 
@@ -204,13 +204,13 @@ cljs.core.array_copy(arr,(1),new_arr,(1),li);
 
 (new_rngs[(32)] = (li + (1)));
 
-var i_58457 = (1);
+var i_69786 = (1);
 while(true){
-if((i_58457 <= li)){
-(new_rngs[i_58457] = ((new_rngs[(i_58457 - (1))]) + step));
+if((i_69786 <= li)){
+(new_rngs[i_69786] = ((new_rngs[(i_69786 - (1))]) + step));
 
-var G__58458 = (i_58457 + (1));
-i_58457 = G__58458;
+var G__69787 = (i_69786 + (1));
+i_69786 = G__69787;
 continue;
 } else {
 }
@@ -229,13 +229,13 @@ var li = ((rngs[(32)]) - (1));
 
 (new_arr[(0)] = child);
 
-var i_58460 = (0);
+var i_69791 = (0);
 while(true){
-if((i_58460 <= li)){
-(new_rngs[i_58460] = ((rngs[i_58460]) - d));
+if((i_69791 <= li)){
+(new_rngs[i_69791] = ((rngs[i_69791]) - d));
 
-var G__58461 = (i_58460 + (1));
-i_58460 = G__58461;
+var G__69792 = (i_69791 + (1));
+i_69791 = G__69792;
 continue;
 } else {
 }
@@ -267,16 +267,16 @@ cljs.core.array_copy(arr__$1,(0),new_arr,(0),i);
 
 (new_arr[i] = child);
 
-var j_58464 = (0);
-var r_58465 = step;
+var j_69795 = (0);
+var r_69796 = step;
 while(true){
-if((j_58464 <= i)){
-(rngs[j_58464] = r_58465);
+if((j_69795 <= i)){
+(rngs[j_69795] = r_69796);
 
-var G__58468 = (j_58464 + (1));
-var G__58469 = (r_58465 + step);
-j_58464 = G__58468;
-r_58465 = G__58469;
+var G__69797 = (j_69795 + (1));
+var G__69798 = (r_69796 + step);
+j_69795 = G__69797;
+r_69796 = G__69798;
 continue;
 } else {
 }
@@ -305,38 +305,38 @@ clojure.core.rrb_vector.nodes.new_path_STAR_ = (function clojure$core$rrb_vector
 var reg_QMARK_ = ((32) === node.arr.length);
 var len = ((reg_QMARK_)?(32):(33));
 var arr = (new Array(len));
-var rngs = (((!(reg_QMARK_)))?(function (){var G__58364 = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
-(G__58364[(0)] = node.arr.length);
+var rngs = (((!(reg_QMARK_)))?(function (){var G__69723 = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
+(G__69723[(0)] = node.arr.length);
 
-(G__58364[(32)] = (1));
+(G__69723[(32)] = (1));
 
-return G__58364;
+return G__69723;
 })():null);
 var ret = cljs.core.__GT_VectorNode(null,arr);
-var arr_58474__$1 = arr;
-var shift_58475__$1 = shift;
+var arr_69803__$1 = arr;
+var shift_69804__$1 = shift;
 while(true){
-if((shift_58475__$1 === (5))){
+if((shift_69804__$1 === (5))){
 if((!(reg_QMARK_))){
-(arr_58474__$1[(32)] = rngs);
+(arr_69803__$1[(32)] = rngs);
 } else {
 }
 
-(arr_58474__$1[(0)] = node);
+(arr_69803__$1[(0)] = node);
 } else {
-var a_58479 = (new Array(len));
-var e_58480 = cljs.core.__GT_VectorNode(null,a_58479);
-(arr_58474__$1[(0)] = e_58480);
+var a_69805 = (new Array(len));
+var e_69806 = cljs.core.__GT_VectorNode(null,a_69805);
+(arr_69803__$1[(0)] = e_69806);
 
 if((!(reg_QMARK_))){
-(arr_58474__$1[(32)] = rngs);
+(arr_69803__$1[(32)] = rngs);
 } else {
 }
 
-var G__58484 = a_58479;
-var G__58485 = (shift_58475__$1 - (5));
-arr_58474__$1 = G__58484;
-shift_58475__$1 = G__58485;
+var G__69807 = a_69805;
+var G__69808 = (shift_69804__$1 - (5));
+arr_69803__$1 = G__69807;
+shift_69804__$1 = G__69808;
 continue;
 }
 break;
@@ -351,17 +351,17 @@ var arr = node.arr;
 var li = clojure.core.rrb_vector.nodes.index_of_nil(arr);
 var new_arr = (new Array(((reg_QMARK_)?(32):(33))));
 var rngs = (((!(clojure.core.rrb_vector.nodes.regular_QMARK_(node))))?clojure.core.rrb_vector.nodes.node_ranges(node):null);
-var cret = (((shift === (5)))?cljs.core.__GT_VectorNode(null,tail):(function (){var G__58390 = (arr[(li - (1))]);
-var G__58391 = (shift - (5));
-var G__58392 = ((clojure.core.rrb_vector.nodes.regular_QMARK_(node))?cljs.core.mod(cnt,((1) << shift)):(function (){var li__$1 = ((rngs[(32)]) - (1));
+var cret = (((shift === (5)))?cljs.core.__GT_VectorNode(null,tail):(function (){var G__69733 = (arr[(li - (1))]);
+var G__69734 = (shift - (5));
+var G__69735 = ((clojure.core.rrb_vector.nodes.regular_QMARK_(node))?cljs.core.mod(cnt,((1) << shift)):(function (){var li__$1 = ((rngs[(32)]) - (1));
 if((li__$1 > (0))){
 return ((rngs[li__$1]) - (rngs[(li__$1 - (1))]));
 } else {
 return (rngs[(0)]);
 }
 })());
-var G__58393 = tail;
-return (clojure.core.rrb_vector.nodes.fold_tail.cljs$core$IFn$_invoke$arity$4 ? clojure.core.rrb_vector.nodes.fold_tail.cljs$core$IFn$_invoke$arity$4(G__58390,G__58391,G__58392,G__58393) : clojure.core.rrb_vector.nodes.fold_tail.call(null,G__58390,G__58391,G__58392,G__58393));
+var G__69736 = tail;
+return (clojure.core.rrb_vector.nodes.fold_tail.cljs$core$IFn$_invoke$arity$4 ? clojure.core.rrb_vector.nodes.fold_tail.cljs$core$IFn$_invoke$arity$4(G__69733,G__69734,G__69735,G__69736) : clojure.core.rrb_vector.nodes.fold_tail.call(null,G__69733,G__69734,G__69735,G__69736));
 })());
 var new_rngs = (((!(reg_QMARK_)))?(cljs.core.truth_(rngs)?cljs.core.aclone(rngs):clojure.core.rrb_vector.nodes.regular_ranges(shift,cnt)):null);
 if((((((cret == null)) || ((shift === (5))))) && ((li === (32))))){
