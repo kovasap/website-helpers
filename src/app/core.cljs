@@ -8,16 +8,22 @@
    [malli.dev.pretty :as pretty]))
 
 
+(defn is-5?
+  {:malli/schema [:=> [:cat :number] :boolean]}
+  [n]
+  (= 5 n))
+
 (def Hiccup [:vector :any])
 
 (defn list-to-hiccup
   "Converts a list of string to hiccup."
-  {:malli/schema [:=> [:cat [:sequential :string]
-                       Hiccup]]}
+  {:malli/schema [:=> [:cat [:sequential :string]] Hiccup]}
   [list]
   [:ul
    (for [item list]
      [:li {:key item} item])])
+
+; (meta #'list-to-hiccup)
 
 
 (def data ["first" "second" "third"])
@@ -38,15 +44,16 @@
 (defn ^:dev/after-load refresh []
   (prn "Hot code Remount")
   ; Check all malli function "specs"
-  ; TODO use the dev namespace once the PR referenced in
-  ; https://github.com/metosin/malli/issues/654#issuecomment-1065650984 is
-  ; merged.
-  ; (dev/start! {:report (pretty/reporter)})
+  ; Uncomment when https://github.com/metosin/malli/issues/675 is fixed
+  ; (malli.dev.cljs/start!) ; {:report (pretty/reporter)})
   (malli.dev.cljs/collect-all!)
   (malli.instrument.cljs/instrument!)
   (mount-root))
 
 (defn ^:export init! []
+  ; Check all malli function "specs"
+  ; Uncomment when https://github.com/metosin/malli/issues/675 is fixed
+  ; (malli.dev.cljs/start!) ; 
   (malli.dev.cljs/collect-all!)
   (malli.instrument.cljs/instrument!)
   (mount-root))
