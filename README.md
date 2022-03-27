@@ -3,14 +3,12 @@
 ## Development Commands
 
 ### Development mode
+
 ```
 npm install
-npx shadow-cljs watch app
+clj -A:shadow-cljs watch app test
 ```
-start a ClojureScript REPL
-```
-npx shadow-cljs browser-repl
-```
+
 ### Building for production
 
 ```
