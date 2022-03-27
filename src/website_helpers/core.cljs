@@ -77,6 +77,19 @@
     - Mood 2
   ")
 
+; Format is [experience details [tags]
+;            [[outcome1 details [tags]] [outcome2 details [tags]] ...] ...)
+(def example-edn
+  [["Comparing prices"
+    "When buying a good or service, comparing many alternatives to find the
+    best price. For example, looking at the price per pound of various grocery
+    items and picking the one with the lowest price."
+    ["habit"]
+    [["Saves some money"
+      ""]
+     [""]]]])
+               
+
 (defn ^:export markdown-to-mapped-data
   {:malli/schema [:=> [:cat Markdown] MappedData]}
   [markdown])
