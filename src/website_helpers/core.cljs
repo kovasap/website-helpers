@@ -83,6 +83,67 @@
     [["Optimization problem"]]]])
                
 
+(defn clean
+  "Cleans newlines and other stuff out of strings."
+  [string]
+  (if (nil? string)
+    ""
+    (replace string #"\n +" " ")))
+
+(defn make-experience-map
+  {:malli/schema [:=> [:cat Experiences] ExperienceMap]}
+  [raw-experiences]
+  (into {} (for [[experience-name details tags outcomes] raw-experiences]
+             [experience-name {:details (clean details)
+                               :tags (set tags)
+                               :outcomes
+                               (into #{} (for [[outcome-name _] outcomes]
+                                           outcome-name))}])))
+                                                    
+; (make-experience-map example-experiences)
+
+(defn accrete-set
+  "Combines two sets, filtering out any nil or empty string values from the
+  second set."
+  {:malli/schema [:=> [:cat [:set :any] [:set :any]] [:set :any]]}
+  [existing new]
+  (union existing
+         (set (filter #(not (contains? #{nil ""} %)) new))))
+
+(defn -accrete-outcomes
+  "Adds a single [OutcomeName OutcomeInfo] pair to an OutcomeMap, merging it
+  with an existing entry if need be."
+  {:malli/schema [:=> [:cat OutcomeMap [:tuple OutcomeName OutcomeInfo]]
+                  OutcomeMap]}
+  [outcome-map [outcome-name {:keys [details experiences tags]}]]
+  (let [{existing-details :details
+         existing-tags :tags
+         existing-experiences :experiences}
+        (get outcome-map outcome-name {:details ""
+                                       :tags #{}
+                                       :experiences #{}})]
+    (assoc outcome-map outcome-name
+           {:details     (str existing-details details)
+            :tags        (accrete-set existing-tags tags)
+            :experiences (accrete-set existing-experiences experiences)})))
+
+(defn make-outcome-map
+  {:malli/schema [:=> [:cat Experiences] OutcomeMap]}
+  [raw-experiences]
+  (reduce
+    -accrete-outcomes
+    {}
+    ; Build up pairs of [OutcomeName data] with duplicate OutcomeName keys.
+    (reduce
+      concat
+      (for [[experience-name _ _ outcomes] raw-experiences]
+         (into {} (for [[outcome-name outcome-details outcome-tags] outcomes]
+                    [outcome-name {:details     (clean outcome-details)
+                                   :tags        (set outcome-tags)
+                                   :experiences #{experience-name}}]))))))
+
+; (make-outcome-map example-experiences)
+
 ; TODO animate the swapping!
 (defn ^:export aggregated-items
   "Example:
@@ -133,82 +194,15 @@
                [:strong (if @swapped "Experiences: " "Outcomes: ")]
                (list-to-hiccup (if @swapped experiences outcomes))])))))
 
-(defn clean
-  "Cleans newlines and other stuff out of strings."
-  [string]
-  (if (nil? string)
-    ""
-    (replace string #"\n +" " ")))
-
-(defn make-experience-map
-  {:malli/schema [:=> [:cat Experiences] ExperienceMap]}
-  [raw-experiences]
-  (into {} (for [[experience-name details tags outcomes] raw-experiences]
-             [experience-name {:details (clean details)
-                               :tags (set tags)
-                               :outcomes
-                               (into #{} (for [[outcome-name _] outcomes]
-                                           outcome-name))}])))
-                                                    
-(make-experience-map example-experiences)
-
-(defn accrete-set
-  "Combines two sets, filtering out any nil or empty string values from the
-  second set."
-  {:malli/schema [:=> [:cat [:set :any] [:set :any]] [:set :any]]}
-  [existing new]
-  (union existing
-         (set (filter #(not (contains? #{nil ""} %)) new))))
-
-(defn -accrete-outcomes
-  "Adds a single [OutcomeName OutcomeInfo] pair to an OutcomeMap, merging it
-  with an existing entry if need be."
-  {:malli/schema [:=> [:cat OutcomeMap [:tuple OutcomeName OutcomeInfo]]
-                  OutcomeMap]}
-  [outcome-map [outcome-name {:keys [details experiences tags]}]]
-  (let [{existing-details :details
-         existing-tags :tags
-         existing-experiences :experiences}
-        (get outcome-map outcome-name {:details ""
-                                       :tags #{}
-                                       :experiences #{}})]
-    (assoc outcome-map outcome-name
-           {:details     (clean (str existing-details details))
-            :tags        (accrete-set existing-tags tags)
-            :experiences (accrete-set existing-experiences experiences)})))
-
-(defn make-outcome-map
-  {:malli/schema [:=> [:cat Experiences] OutcomeMap]}
-  [raw-experiences]
-  (reduce
-    -accrete-outcomes
-    {}
-    ; Build up pairs of [OutcomeName data] with duplicate OutcomeName keys.
-    (reduce
-      concat
-      (for [[experience-name _ _ outcomes] raw-experiences]
-         (into {} (for [[outcome-name outcome-details outcome-tags] outcomes]
-                    [outcome-name {:details     (clean outcome-details)
-                                   :tags        (set outcome-tags)
-                                   :experiences #{experience-name}}]))))))
-
-(make-outcome-map example-experiences)
-
 (defn ^:export make-aggregated-items
   {:malli/schema [:=> [:cat Experiences] ReagentComponent]}
   [raw-experiences]
   (aggregated-items (make-experience-map raw-experiences)
                     (make-outcome-map raw-experiences)))
-  
-
-(def ^:export data ["first" "second" "third"])
 
 (defn home-page []
   (fn []
-    [:div [:h2 "My App"]
-     [:div "hello world!"]
-     (list-to-hiccup data)
-     [make-aggregated-items example-experiences]]))
+    [make-aggregated-items example-experiences]))
 
 ;; -------------------------
 ;; Initialize app
