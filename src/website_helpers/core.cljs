@@ -1,14 +1,18 @@
 (ns website-helpers.core
   (:require
-   [reagent.core :as r]
-   [reagent.dom :as d]
-   [malli.core :as m]
-   [malli.instrument.cljs]
-   [malli.dev.cljs]
-   [malli.dev.pretty :as pretty]))
+    [clojure.string :refer [replace join]]
+    [clojure.set :refer [union]]
+    [reagent.core :as r]
+    [reagent.dom :as d]
+    [malli.core :as m]
+    [malli.instrument.cljs]
+    [malli.dev.cljs]
+    [malli.dev.pretty :as pretty]))
 
 
 (def Hiccup [:vector :any])
+(def ReagentComponent [:or [:=> [:cat :any] Hiccup]
+                           Hiccup])
 
 (defn ^:export to-js
   "Useful for debugging when trying to call functions in this file from js."
@@ -20,21 +24,65 @@
   (d/render component (.getElementById js/document element-id)))
 
 (defn ^:export list-to-hiccup
-  "Converts a list of string to hiccup."
-  {:malli/schema [:=> [:cat [:sequential :string]] Hiccup]}
-  [list]
+  "Converts a sequence of string to hiccup."
+  {:malli/schema [:=> [:cat [:or [:sequential :string] [:set :string]]]
+                  Hiccup]}
+  [strings]
   [:ul
-   (for [item list]
-     [:li {:key item} item])])
+   (for [s strings]
+     [:li {:key s} s])])
 ; (meta #'list-to-hiccup)
 
+(def ExperienceName :string)
+(def OutcomeName :string)
+(def Details
+  "A more detailed description of a specific experience or outcome." :string)
+(def Tag :string)
+(def Experiences
+  "A syntax for writing experiences, to be parsed into maps for easier coding."
+  [:vector [:cat
+            ExperienceName
+            Details
+            [:vector Tag]
+            ; The details and tags for outcomes can be omitted.
+            ; TODO encode this in the schema.
+            [:vector [:cat OutcomeName Details [:vector Tag]]]]])
 
-(def Item :string)
-(def MappedData [:map-of [Item [:vector Item]]])
-(def Details "A more detailed description of a specific item." :string)
-(def ItemDetails [:map-of [Item Details]])
+(def ExperienceInfo
+  [:map [:details Details]
+        [:tags [:set Tag]]
+        [:outcomes [:set OutcomeName]]])
+(def ExperienceMap
+  [:map-of ExperienceName ExperienceInfo])
+
+(def OutcomeInfo
+  [:map [:details Details]
+        [:tags [:set Tag]]
+        [:experiences [:set ExperienceName]]])
+(def OutcomeMap
+  [:map-of OutcomeName OutcomeInfo])
 
 
+(def example-experiences
+  [["Comparing prices"
+    "When buying a good or service, comparing many alternatives to find the
+    best price. For example, looking at the price per pound of various grocery
+    items and picking the one with the lowest price."
+    ["habit"]
+    [["Saves some money"
+      ""
+      ["positive"]]
+     ["Optimization problem"
+      "Involves constantly scanning many options and determining the best one."
+      ["engaging"]]]]
+   ["Slipways"
+    "A video game about colonizing planets and connecting them with trade
+    routes."
+    ["game" "solitary"]
+    [["Optimization problem" "" []]]]])
+               
+
+; TODO animate the swapping!
 (defn ^:export aggregated-items
   "Example:
   
@@ -65,45 +113,89 @@
   ```
 
   when clicking the 'swap' button."
-  {:malli/schema [:=> [:cat MappedData ItemDetails] Hiccup]}
-  [mapped-data details])
+  {:malli/schema [:=> [:cat ExperienceMap OutcomeMap] ReagentComponent]}
+  [experience-map outcome-map]
+  (let [swapped (r/atom false)]
+    (fn []
+      ; This extra into is necessary since we are dereferencing @swapped
+      ; See https://github.com/reagent-project/reagent/issues/18
+      (into [:div
+             [:h2 (if @swapped "Outcomes" "Experiences")]
+             [:button {:on-click #(reset! swapped (not @swapped))}
+              "Swap!"]]
+            (for [[item-name {:keys [details tags outcomes experiences]}]
+                  (if @swapped outcome-map experience-map)]
+              [:div {:key item-name}
+               [:h3 item-name]
+               [:p details]
+               [:p "Tags: " (join ", " (sort tags))]
+               [:strong (if @swapped "Experiences: " "Outcomes: ")]
+               (list-to-hiccup (if @swapped experiences outcomes))])))))
 
+(defn clean
+  "Cleans newlines and other stuff out of strings."
+  [string]
+  (replace string #"\n +" " "))
 
-(def Markdown :string)
+(defn make-experience-map
+  {:malli/schema [:=> [:cat Experiences] ExperienceMap]}
+  [raw-experiences]
+  (into {} (for [[experience-name details tags outcomes] raw-experiences]
+             [experience-name {:details (clean details)
+                               :tags (set tags)
+                               :outcomes
+                               (into #{} (for [[outcome-name _] outcomes]
+                                           outcome-name))}])))
+                                                    
+(make-experience-map example-experiences)
 
-(def example-markdown 
-  "My Experience (details about this experience)
-    - Mood 1 (details about this mood)
-    - Mood 2
-  ")
+(defn accrete-set
+  "Combines two sets, filtering out any nil or empty string values from the
+  second set."
+  {:malli/schema [:=> [:cat [:set :any] [:set :any]] [:set :any]]}
+  [existing new]
+  (union existing
+         (set (filter #(not (contains? #{nil ""} %)) new))))
 
-; Format is [experience details [tags]
-;            [[outcome1 details [tags]] [outcome2 details [tags]] ...] ...)
-(def example-edn
-  [["Comparing prices"
-    "When buying a good or service, comparing many alternatives to find the
-    best price. For example, looking at the price per pound of various grocery
-    items and picking the one with the lowest price."
-    ["habit"]
-    [["Saves some money"
-      ""]
-     [""]]]])
-               
+(defn -accrete-outcomes
+  "Adds a single [OutcomeName OutcomeInfo] pair to an OutcomeMap, merging it
+  with an existing entry if need be."
+  {:malli/schema [:=> [:cat OutcomeMap [:tuple OutcomeName OutcomeInfo]]
+                  OutcomeMap]}
+  [outcome-map [outcome-name {:keys [details experiences tags]}]]
+  (let [{existing-details :details
+         existing-tags :tags
+         existing-experiences :experiences}
+        (get outcome-map outcome-name {:details ""
+                                       :tags #{}
+                                       :experiences #{}})]
+    (assoc outcome-map outcome-name
+           {:details     (clean (str existing-details details))
+            :tags        (accrete-set existing-tags tags)
+            :experiences (accrete-set existing-experiences experiences)})))
 
-(defn ^:export markdown-to-mapped-data
-  {:malli/schema [:=> [:cat Markdown] MappedData]}
-  [markdown])
+(defn make-outcome-map
+  {:malli/schema [:=> [:cat Experiences] OutcomeMap]}
+  [raw-experiences]
+  (reduce
+    -accrete-outcomes
+    {}
+    ; Build up pairs of [OutcomeName data] with duplicate OutcomeName keys.
+    (reduce
+      concat
+      (for [[experience-name _ _ outcomes] raw-experiences]
+         (into {} (for [[outcome-name outcome-details outcome-tags] outcomes]
+                    [outcome-name {:details     outcome-details
+                                   :tags        (set outcome-tags)
+                                   :experiences #{experience-name}}]))))))
 
-(defn ^:export markdown-to-details
-  {:malli/schema [:=> [:cat Markdown] ItemDetails]}
-  [markdown])
-
+(make-outcome-map example-experiences)
 
 (defn ^:export make-aggregated-items
-  {:malli/schema [:=> [:cat Markdown] Hiccup]}
-  [markdown]
-  (aggregated-items (markdown-to-mapped-data markdown)
-                    (markdown-to-details markdown)))
+  {:malli/schema [:=> [:cat Experiences] ReagentComponent]}
+  [raw-experiences]
+  (aggregated-items (make-experience-map raw-experiences)
+                    (make-outcome-map raw-experiences)))
   
 
 (def ^:export data ["first" "second" "third"])
@@ -113,7 +205,7 @@
     [:div [:h2 "My App"]
      [:div "hello world!"]
      (list-to-hiccup data)
-     (make-aggregated-items example-markdown)]))
+     [make-aggregated-items example-experiences]]))
 
 ;; -------------------------
 ;; Initialize app
