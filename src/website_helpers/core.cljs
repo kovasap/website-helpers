@@ -40,13 +40,14 @@
 (def Tag :string)
 (def Experiences
   "A syntax for writing experiences, to be parsed into maps for easier coding."
-  [:vector [:cat
+  [:vector [:tuple
             ExperienceName
             Details
             [:vector Tag]
-            ; The details and tags for outcomes can be omitted.
-            ; TODO encode this in the schema.
-            [:vector [:cat OutcomeName Details [:vector Tag]]]]])
+            [:vector [:or
+                      [:tuple OutcomeName] 
+                      [:tuple OutcomeName Details] 
+                      [:tuple OutcomeName Details [:vector Tag]]]]]])
 
 (def ExperienceInfo
   [:map [:details Details]
@@ -79,7 +80,7 @@
     "A video game about colonizing planets and connecting them with trade
     routes."
     ["game" "solitary"]
-    [["Optimization problem" "" []]]]])
+    [["Optimization problem"]]]])
                
 
 ; TODO animate the swapping!
@@ -135,7 +136,9 @@
 (defn clean
   "Cleans newlines and other stuff out of strings."
   [string]
-  (replace string #"\n +" " "))
+  (if (nil? string)
+    ""
+    (replace string #"\n +" " ")))
 
 (defn make-experience-map
   {:malli/schema [:=> [:cat Experiences] ExperienceMap]}
@@ -185,7 +188,7 @@
       concat
       (for [[experience-name _ _ outcomes] raw-experiences]
          (into {} (for [[outcome-name outcome-details outcome-tags] outcomes]
-                    [outcome-name {:details     outcome-details
+                    [outcome-name {:details     (clean outcome-details)
                                    :tags        (set outcome-tags)
                                    :experiences #{experience-name}}]))))))
 
