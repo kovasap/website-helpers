@@ -22,7 +22,9 @@
 
 (defn ^:export read-edn-string
   [string]
-  (let [unescaped-str (replace string "&#34;" "\"")]
+  (let [unescaped-str (-> string
+                          (replace "&#34;" "\"")
+                          (replace "&#39;" "'"))]
     (cljs.reader/read-string unescaped-str)))
 
 ; (read-edn-string "\n\n[[&#34;Comparing prices&#34;\n  &#34;When buying a good or service, comparing many alternatives to find the\n  best price. For example, looking at the price per pound of various grocery\n  items and picking the one with the lowest price.&#34;\n  [&#34;habit&#34;]\n  [[&#34;Saves some money&#34;\n    &#34;&#34;\n    [&#34;positive&#34;]]\n   [&#34;Optimization problem&#34;\n    &#34;Involves constantly scanning many options and determining the best one.&#34;\n    [&#34;engaging&#34;]]]]\n [&#34;Slipways&#34;\n  &#34;A video game about colonizing planets and connecting them with trade\n  routes.&#34;\n  [&#34;game&#34; &#34;solitary&#34;]\n  [[&#34;Optimization problem&#34;]]]]\n\n\n")
