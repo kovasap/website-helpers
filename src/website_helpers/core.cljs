@@ -29,7 +29,7 @@
 
 (defn ^:export render-to-element
   [component element-id]
-  (d/render component (.getElementById js/document element-id)))
+  (d/render [component] (.getElementById js/document element-id)))
 
 (defn ^:export list-to-hiccup
   "Converts a sequence of string to hiccup."
