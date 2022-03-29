@@ -197,9 +197,8 @@
                   (if @swapped outcome-map experience-map)]
               [:div {:key item-name}
                [:h3 item-name]
-               [:p details]
                [:p "Tags: " (join ", " (sort tags))]
-               [:h4 (if @swapped "Experiences: " "Outcomes: ")]
+               [:p details " " (if @swapped "Experiences: " "Outcomes: ")]
                (list-to-hiccup (if @swapped experiences outcomes))])))))
 
 (defn ^:export make-aggregated-items
