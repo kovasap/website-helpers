@@ -5,9 +5,7 @@
     [clojure.set :refer [union]]
     [reagent.core :as r]
     [reagent.dom :as d]
-    [malli.core :as m]
-    [malli.instrument.cljs]
-    [malli.dev.cljs]
+    [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
 
 
@@ -43,35 +41,28 @@
      [:li {:key s} s])])
 ; (meta #'list-to-hiccup)
 
-(def ExperienceName :string)
-(def OutcomeName :string)
+(def Name :string)
 (def Details
   "A more detailed description of a specific experience or outcome." :string)
 (def Tag :string)
 (def Experiences
-  "A syntax for writing experiences, to be parsed into maps for easier coding."
+  "A syntax for writing experiences, to be parsed into maps for easier coding.
+  Experiences are on the outer layer."
   [:vector [:tuple
-            ExperienceName
+            Name
             Details
             [:vector Tag]
             [:vector [:or
-                      [:tuple OutcomeName] 
-                      [:tuple OutcomeName Details] 
-                      [:tuple OutcomeName Details [:vector Tag]]]]]])
+                      [:tuple Name] 
+                      [:tuple Name Details] 
+                      [:tuple Name Details [:vector Tag]]]]]])
 
-(def ExperienceInfo
+(def Info
   [:map [:details Details]
         [:tags [:set Tag]]
-        [:outcomes [:set OutcomeName]]])
-(def ExperienceMap
-  [:map-of ExperienceName ExperienceInfo])
-
-(def OutcomeInfo
-  [:map [:details Details]
-        [:tags [:set Tag]]
-        [:experiences [:set ExperienceName]]])
-(def OutcomeMap
-  [:map-of OutcomeName OutcomeInfo])
+        [:children [:set Name]]])
+(def DataMap
+  [:map-of Name Info])
 
 
 (def example-experiences
@@ -101,12 +92,12 @@
     (replace string #"\n +" " ")))
 
 (defn make-experience-map
-  {:malli/schema [:=> [:cat Experiences] ExperienceMap]}
+  {:malli/schema [:=> [:cat Experiences] DataMap]}
   [raw-experiences]
   (into {} (for [[experience-name details tags outcomes] raw-experiences]
              [experience-name {:details (clean details)
                                :tags (set tags)
-                               :outcomes
+                               :children
                                (into #{} (for [[outcome-name _] outcomes]
                                            outcome-name))}])))
                                                     
@@ -123,22 +114,22 @@
 (defn -accrete-outcomes
   "Adds a single [OutcomeName OutcomeInfo] pair to an OutcomeMap, merging it
   with an existing entry if need be."
-  {:malli/schema [:=> [:cat OutcomeMap [:tuple OutcomeName OutcomeInfo]]
-                  OutcomeMap]}
-  [outcome-map [outcome-name {:keys [details experiences tags]}]]
+  {:malli/schema [:=> [:cat DataMap [:tuple Name Info]]
+                  DataMap]}
+  [data-map [name {:keys [details children tags]}]]
   (let [{existing-details :details
          existing-tags :tags
-         existing-experiences :experiences}
-        (get outcome-map outcome-name {:details ""
-                                       :tags #{}
-                                       :experiences #{}})]
-    (assoc outcome-map outcome-name
+         existing-children :children}
+        (get data-map name {:details ""
+                            :tags #{}
+                            :children #{}})]
+    (assoc data-map name
            {:details     (str existing-details details)
             :tags        (accrete-set existing-tags tags)
-            :experiences (accrete-set existing-experiences experiences)})))
+            :children    (accrete-set existing-children children)})))
 
 (defn make-outcome-map
-  {:malli/schema [:=> [:cat Experiences] OutcomeMap]}
+  {:malli/schema [:=> [:cat Experiences] DataMap]}
   [raw-experiences]
   (reduce
     -accrete-outcomes
@@ -150,9 +141,41 @@
          (into {} (for [[outcome-name outcome-details outcome-tags] outcomes]
                     [outcome-name {:details     (clean outcome-details)
                                    :tags        (set outcome-tags)
-                                   :experiences #{experience-name}}]))))))
+                                   :children    #{experience-name}}]))))))
 
 ; (make-outcome-map example-experiences)
+
+(defn anchor
+  [item-name]
+  [:a {:class "anchor" :href (str "#" (replace item-name " " "-"))} "#"])
+
+(defn dropdown-check-list
+  {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of Tag :boolean]
+                  ReagentComponent]}
+  [tags]
+  (let [opened (r/atom false)]
+    (fn []
+      [:div {:id "tag-list"
+             :class ["dropdown-check-list" (if @opened "visible" nil)]
+             :tabIndex "100"}
+       [:span {:class "anchor" :on-click #(reset! opened (not @opened))}
+        "Select Tags"]
+       [:ul {:class "items"}
+        (for [tag (sort (keys @tags))]
+          [:li {:key tag}
+           [:input {:type "checkbox"
+                    ; TODO use some smarter data binding to match the state of
+                    ; tags to this component.
+                    :on-click (fn []
+                                (swap! tags assoc tag (not (get @tags tag)))
+                                (prn @tags))}]
+           tag])]])))
+
+(defn get-tags
+  {:malli/schema [:=> [:cat DataMap] [:map-of Tag :boolean]]}
+  [data-map]
+  (into {} (map (fn [tag] [tag true])
+                (reduce union (map :tags (vals data-map))))))
 
 ; TODO animate the swapping!
 (defn ^:export aggregated-items
@@ -185,23 +208,27 @@
   ```
 
   when clicking the 'swap' button."
-  {:malli/schema [:=> [:cat ExperienceMap OutcomeMap] ReagentComponent]}
+  {:malli/schema [:=> [:cat DataMap DataMap] ReagentComponent]}
   [experience-map outcome-map]
-  (let [swapped (r/atom false)]
+  (let [swapped (r/atom false)
+        get-data (fn [] (if @swapped outcome-map experience-map))
+        tags (r/atom (get-tags experience-map))]
     (fn []
       ; This extra into is necessary since we are dereferencing @swapped
       ; See https://github.com/reagent-project/reagent/issues/18
       (into [:div
              [:h2 (if @swapped "Outcomes" "Experiences")]
-             [:button {:on-click #(reset! swapped (not @swapped))}
-              "Swap!"]]
-            (for [[item-name {:keys [details tags outcomes experiences]}]
-                  (if @swapped outcome-map experience-map)]
+             [:button {:on-click (fn [] (reset! swapped (not @swapped))
+                                        (reset! tags (get-tags (get-data))))}
+              "Swap!"]
+             [:div [dropdown-check-list tags]]] 
+            (for [[item-name {:keys [details tags children]}]
+                  (get-data)]
               [:div {:key item-name}
-               [:h3 item-name]
+               [:h3 item-name (anchor item-name)] 
                [:p "Tags: " (join ", " (sort tags))]
                [:p details " " (if @swapped "Experiences: " "Outcomes: ")]
-               (list-to-hiccup (if @swapped experiences outcomes))])))))
+               (list-to-hiccup children)])))))
 
 (defn ^:export make-aggregated-items
   {:malli/schema [:=> [:cat Experiences] ReagentComponent]}
@@ -221,17 +248,9 @@
 
 (defn ^:dev/after-load refresh []
   (prn "Hot code Remount")
-  ; Check all malli function "specs"
-  ; Uncomment when https://github.com/metosin/malli/issues/675 is fixed
-  ; (malli.dev.cljs/start!) ; {:report (pretty/reporter)})
-  (malli.dev.cljs/collect-all!)
-  (malli.instrument.cljs/instrument!)
+  (dev/start! {:report (pretty/reporter)})
   (mount-root))
 
 (defn ^:export init! []
-  ; Check all malli function "specs"
-  ; Uncomment when https://github.com/metosin/malli/issues/675 is fixed
-  ; (malli.dev.cljs/start!) ; 
-  (malli.dev.cljs/collect-all!)
-  (malli.instrument.cljs/instrument!)
+  (dev/start! {:report (pretty/reporter)})
   (mount-root))

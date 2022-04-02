@@ -1,14 +1,16 @@
 {:deps true
- :builds       {:website_helpers {:target     :browser
-                                  :output-dir "public/js"
-                                  :asset-path "/js"
-                                  :modules    {:website_helpers {:entries [website-helpers.core]}}
-                                  :devtools   {:preloads [devtools.preload]
-                                               :after-load app.core/mount-root}}
-                :test {:target :browser-test
-                       :test-dir "out/test"
-                       :ns-regexp "test"}}
+ :builds {:website_helpers
+          {:target     :browser
+           :output-dir "public/js"
+           :asset-path "/js"
+           :modules    {:website_helpers {:entries [website-helpers.core]}}
+           :devtools   {:preloads [devtools.preload]
+                        :after-load app.core/mount-root}}
+          :test
+          {:target :browser-test
+           :test-dir "out/test"
+           :ns-regexp "test"}}
 
- :dev-http     {8021 "out/test"
-                3000 {:root    "public"
-                      :handler user/website-helper}}}
+ :dev-http {8021 "out/test"
+            3000 {:root    "public"
+                  :handler user/website-helper}}}
