@@ -22,14 +22,17 @@
 (defn get-raw-string
   "Removes links or other hiccup wrappers from a string."
   [string]
-  (prn string (string? string))
   (if (string? string)
     string
     (last string)))
 
+(defn anchor-string
+  [item-name]
+  (replace (get-raw-string item-name) " " "-"))
+
 (defn anchor
   [item-name]
-  [:a {:class "anchor" :href (str "#" (replace (get-raw-string item-name) " " "-"))} "#"])
+  [:a {:class "anchor" :href (str "#" (anchor-string item-name))} "#"])
 
 (defn ^:export to-js
   "Useful for debugging when trying to call functions in this file from js."
@@ -59,12 +62,12 @@
    (for [s strings
          :let [hiccup (my-md->hiccup s)]]
      [:li {:key s}
-      (into (anchor hiccup) hiccup)])])
+      (into (anchor hiccup) (get-raw-string hiccup))])])
 ; (meta #'list-to-hiccup)
 
 (def Name :string)
 (def Details
-  "A more detailed description of a specific experience or outcome." :string)
+  "A more detailed description of a specific experience or mental-state." :string)
 (def Tag :string)
 (def Experiences
   "A syntax for writing experiences, to be parsed into maps for easier coding.
@@ -92,8 +95,8 @@
     best price. For example, looking at the price per pound of various grocery
     items and picking the one with the lowest price."
     ["habit"]
-    [["Saves some money"
-      ""
+    [["Financial Control"
+      "A sense that you are living within or below your means."
       ["positive"]]
      ["Optimization problem"
       "Involves constantly scanning many options and determining the best one."
@@ -115,12 +118,12 @@
 (defn make-experience-map
   {:malli/schema [:=> [:cat Experiences] DataMap]}
   [raw-experiences]
-  (into {} (for [[experience-name details tags outcomes] raw-experiences]
+  (into {} (for [[experience-name details tags mental-states] raw-experiences]
              [experience-name {:details (clean details)
                                :tags (set tags)
                                :children
-                               (into #{} (for [[outcome-name _] outcomes]
-                                           outcome-name))}])))
+                               (into #{} (for [[mental-state-name _] mental-states]
+                                           mental-state-name))}])))
                                                     
 ; (make-experience-map example-experiences)
 
@@ -132,39 +135,43 @@
   (union existing
          (set (filter #(not (contains? #{nil ""} %)) new))))
 
-(defn -accrete-outcomes
-  "Adds a single [OutcomeName OutcomeInfo] pair to an OutcomeMap, merging it
-  with an existing entry if need be."
+(defn -accrete-mental-states
+  "Adds a single [Name Info] pair to an DataMap, merging it with an existing
+  entry if need be."
   {:malli/schema [:=> [:cat DataMap [:tuple Name Info]]
                   DataMap]}
   [data-map [name {:keys [details children tags]}]]
   (let [{existing-details :details
          existing-tags :tags
-         existing-children :children}
-        (get data-map name {:details ""
-                            :tags #{}
-                            :children #{}})]
+         existing-children :children
+         :or {existing-details ""
+              existing-tags #{}
+              existing-children #{}}}
+        (get data-map name)]
     (assoc data-map name
            {:details     (str existing-details details)
             :tags        (accrete-set existing-tags tags)
             :children    (accrete-set existing-children children)})))
 
-(defn make-outcome-map
+(defn make-mental-state-map
   {:malli/schema [:=> [:cat Experiences] DataMap]}
   [raw-experiences]
   (reduce
-    -accrete-outcomes
+    -accrete-mental-states
     {}
-    ; Build up pairs of [OutcomeName data] with duplicate OutcomeName keys.
+    ; Build up pairs of [Name data] with duplicate Name keys.
     (reduce
       concat
-      (for [[experience-name _ _ outcomes] raw-experiences]
-         (into {} (for [[outcome-name outcome-details outcome-tags] outcomes]
-                    [outcome-name {:details     (clean outcome-details)
-                                   :tags        (set outcome-tags)
-                                   :children    #{experience-name}}]))))))
+      (for [[experience-name _ _ mental-states] raw-experiences]
+         (into {} (for [[mental-state-name mental-state-details mental-state-tags]
+                        mental-states]
+                    [mental-state-name
+                     {:details     (clean mental-state-details)
+                      :tags        (if (nil? mental-state-tags)
+                                     #{} (set mental-state-tags))
+                      :children    #{experience-name}}]))))))
 
-; (make-outcome-map example-experiences)
+(make-mental-state-map example-experiences)
 
 (defn dropdown-check-list
   {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of Tag :boolean]
@@ -244,17 +251,19 @@
   [data-name other-name data-map]
   (let [tag-selections (r/atom (get-tag-selections data-map))]
     (fn [data-name other-name data-map]
-      ; This extra into is necessary since we are dereferencing @swapped
+      ; This extra into is necessary since we are dereferencing @tag-selections
       ; See https://github.com/reagent-project/reagent/issues/18
       (into [:div
              [:h2 data-name]
              [:div [dropdown-check-list tag-selections]]] 
             (for [[item-name {:keys [details tags children]}]
                   data-map
-                  :let [selected-tags (get-selected-tags @tag-selections tags)]
+                  :let [selected-tags (get-selected-tags @tag-selections tags)
+                        hiccup-name (my-md->hiccup item-name)]
                   :when (not (empty? (intersection selected-tags tags)))]
               [:div {:key item-name}
-               [:h3 (my-md->hiccup item-name) (anchor item-name)] 
+               [:h3 {:id (anchor-string item-name)} hiccup-name
+                (anchor hiccup-name)] 
                (make-tag-hiccup tags selected-tags)
                [:p (my-md->hiccup details) " " other-name ":"]
                (list-to-hiccup children)])))))
@@ -264,10 +273,10 @@
   [raw-experiences]
   (fn []
     [:div
-      [aggregated-items "Experiences" "Outcomes"
+      [aggregated-items "Experiences" "States of Mind"
                         (make-experience-map raw-experiences)]
-      [aggregated-items "Outcomes" "Experiences"
-                        (make-outcome-map raw-experiences)]]))
+      [aggregated-items "States of Mind" "Experiences"
+                        (make-mental-state-map raw-experiences)]]))
 
 (defn home-page []
   (fn []
