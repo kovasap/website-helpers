@@ -262,7 +262,7 @@
                         hiccup-name (my-md->hiccup item-name)]
                   :when (not (empty? (intersection selected-tags tags)))]
               [:div {:key item-name}
-               [:h3 {:id (anchor-string item-name)} hiccup-name
+               [:h3 {:id (anchor-string hiccup-name)} hiccup-name
                 (anchor hiccup-name)] 
                (make-tag-hiccup tags selected-tags)
                [:p (my-md->hiccup details) " " other-name ":"]
