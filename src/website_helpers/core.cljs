@@ -89,7 +89,7 @@
   [:map-of Name Info])
 
 
-(def example-experiences
+(def example-experiences-orig
   [["Comparing prices"
     "When buying a good or service, comparing many alternatives to find the
     best price. For example, looking at the price per pound of various grocery
@@ -107,6 +107,95 @@
     ["game" "solitary"]
     [["Optimization problem"]]]])
                
+
+(def example-experiences
+ [["Comparing prices"
+   "When buying a good or service, comparing many alternatives to find the
+  best price. For example, looking at the price per pound of various grocery
+  items and picking the one with the lowest price."
+   ["habit"]
+   [["Saving Money"
+     ""
+     ["positive"]]
+    ["Scanning through possibilities"
+     "Constantly examining many options and determining the best one by some
+    usually simple criteria."
+     ["engaging"]]]]
+  ["Lead Climbing in a Gym"
+   "Clipping quickdraws on the way up a climbing route in a gym."
+   ["climbing" "exercise"]
+   [["Thrill of Committment"
+     "Doing something with a penalty for failure that you can't turn back from."]
+    ["Triumph over Exposure"
+     "Putting yourself in a stressful situation and showing yourself that you
+    can survive in it. I think this is a feeling Marc-André Leclerc was chasing
+    in the movie 'The Alpinist'."]
+    ["Being in the Zone"]]]
+  ["Redditing"
+   "Browsing reddit."
+   ["habit"]
+   [["Easy to do"
+     "Requires little to no difficult decision making, so is therefore easy to
+    pick up and do."]
+    ["Contains hidden gems"
+     "Most of the time this activity is monotonous and/or forgettable, but
+    occasionally it will yield an extremely memorable or life-changing
+    experience."]]]
+  ["Browsing Hacker News"
+   "Like browsing reddit."
+   []
+   [["Easy to do"]
+    ["Contains hidden gems"]]]
+  ["Watching GothamChess"
+   "Watching the GothamChess YouTube channel."
+   []
+   [["Easy to do"]
+    ["False Understanding"
+     "A state of mind where something seems to make sense emotionally, but if
+    you were to try to explain it in your own words or otherwise apply the
+    knowledge you would fail."]]]
+  ["Yo-Yoing"
+   "Playing with a yo-yo, and learning new tricks for it."
+   []
+   [["Skill clicking into place"
+     "The feeling when something that you thought was impossible, or otherwise
+    had no idea how to even approach doing, you can suddenly do effortlessly."]]]
+  ["Beat Saber"
+   "Playing the VR rhythm game beat saber."
+   []
+   [["Skill clicking into place"]
+    ["Being in the Zone"
+     "Being in a state of mind where all your attention must be focused on a
+    single thing to avoid failure, leading to an emptiness of other thoughts."]]]
+  ["Making Small Web Apps in ClojureScript with Reagent"
+   "See title :)"
+   ["programming"]
+   [["Pride of Construction"
+     "Feeling proud or even in awe of something you made that is now a (semi)
+    permenant thing in the world. "
+     ["positive"]]
+    ["Chaos to Solution"
+     "The feeling when you have no idea how to fix something but suddenly a
+    solution appears out of nowhere. You may or may not understand how the
+    solution works or where it came from."]]]
+  ["Apex Legends"
+   "A fast-paced first person shooter video game. Has extremely good art
+  direction, smooth gameplay, and balanced mechanics."
+   ["game" "multiplayer" "competitive"]
+   [["Constructive regret"
+     "The feeling when you step out of a test and think 'I knew that answer!!'
+    in a way that makes you want to walk right back into the testing hall and
+    fix your mistake."]]]
+  ["[Wordle](https://www.nytimes.com/games/wordle/index.html)"
+   "A fun word game."
+   ["game" "social"]
+   [["Scanning through possibilities"]]]
+  ["Slipways"
+   "A video game about colonizing planets and connecting them with trade
+  routes."
+   ["game" "solitary"]
+   [["Scanning through possibilities"]]]])
+  
 
 (defn clean
   "Cleans newlines and other stuff out of strings."
@@ -197,14 +286,17 @@
 (defn get-tag-selections
   {:malli/schema [:=> [:cat DataMap] [:map-of Tag :boolean]]}
   [data-map]
-  (into {} (map (fn [tag] [tag true])
+  (into {} (map (fn [tag] [tag false])
                 (reduce union (map :tags (vals data-map))))))
 
 (defn get-selected-tags
+  "If no tags are selected, all are!"
   {:malli/schema [:=> [:cat [:map-of Tag :boolean] [:set Tag]]
                   [:set Tag]]}
   [tag-selections tags]
-  (into #{} (filter #(get tag-selections %) tags)))
+  (if (every? #(not %) (vals tag-selections))
+    (set (keys tag-selections))
+    (set (filter #(get tag-selections %) tags))))
 
 (defn make-tag-hiccup
   {:malli/schema [:=> [:cat [:set Tag] [:set Tag]]
@@ -260,7 +352,8 @@
                   data-map
                   :let [selected-tags (get-selected-tags @tag-selections tags)
                         hiccup-name (my-md->hiccup item-name)]
-                  :when (not (empty? (intersection selected-tags tags)))]
+                  :when (or (= (count selected-tags) (count @tag-selections))
+                            (not (empty? (intersection selected-tags tags))))]
               [:div {:key item-name}
                [:h3 {:id (anchor-string hiccup-name)} hiccup-name
                 (anchor hiccup-name)] 
