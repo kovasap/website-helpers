@@ -2,16 +2,34 @@
   (:require
     [cljs.reader]
     [clojure.string :refer [replace join]]
-    [clojure.set :refer [union]]
+    [clojure.set :refer [union intersection]]
     [reagent.core :as r]
     [reagent.dom :as d]
+    [markdown-to-hiccup.core :refer [md->hiccup component]]
     [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
-
 
 (def Hiccup [:vector :any])
 (def ReagentComponent [:or [:=> [:cat :any] Hiccup]
                            Hiccup])
+
+(defn my-md->hiccup
+  [string]
+  (last (last (component (md->hiccup string)))))
+
+(my-md->hiccup "[Slipways](https://slipways.net/)")
+
+(defn get-raw-string
+  "Removes links or other hiccup wrappers from a string."
+  [string]
+  (prn string (string? string))
+  (if (string? string)
+    string
+    (last string)))
+
+(defn anchor
+  [item-name]
+  [:a {:class "anchor" :href (str "#" (replace (get-raw-string item-name) " " "-"))} "#"])
 
 (defn ^:export to-js
   "Useful for debugging when trying to call functions in this file from js."
@@ -32,13 +50,16 @@
   (d/render [component] (.getElementById js/document element-id)))
 
 (defn ^:export list-to-hiccup
-  "Converts a sequence of string to hiccup."
-  {:malli/schema [:=> [:cat [:or [:sequential :string] [:set :string]]]
+  "Converts a sequence of string to hiccup. "
+  {:malli/schema [:=> [:cat [:or [:sequential :string]
+                                 [:set :string]]]
                   Hiccup]}
   [strings]
   [:ul
-   (for [s strings]
-     [:li {:key s} s])])
+   (for [s strings
+         :let [hiccup (my-md->hiccup s)]]
+     [:li {:key s}
+      (into (anchor hiccup) hiccup)])])
 ; (meta #'list-to-hiccup)
 
 (def Name :string)
@@ -77,7 +98,7 @@
      ["Optimization problem"
       "Involves constantly scanning many options and determining the best one."
       ["engaging"]]]]
-   ["Slipways"
+   ["[Slipways](https://slipways.net/)"
     "A video game about colonizing planets and connecting them with trade
     routes."
     ["game" "solitary"]
@@ -145,10 +166,6 @@
 
 ; (make-outcome-map example-experiences)
 
-(defn anchor
-  [item-name]
-  [:a {:class "anchor" :href (str "#" (replace item-name " " "-"))} "#"])
-
 (defn dropdown-check-list
   {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of Tag :boolean]
                   ReagentComponent]}
@@ -160,22 +177,38 @@
              :tabIndex "100"}
        [:span {:class "anchor" :on-click #(reset! opened (not @opened))}
         "Select Tags"]
-       [:ul {:class "items"}
-        (for [tag (sort (keys @tags))]
-          [:li {:key tag}
-           [:input {:type "checkbox"
-                    ; TODO use some smarter data binding to match the state of
-                    ; tags to this component.
-                    :on-click (fn []
-                                (swap! tags assoc tag (not (get @tags tag)))
-                                (prn @tags))}]
-           tag])]])))
+       (into [:ul {:class "items"}]
+             (for [tag (sort (keys @tags))]
+               [:li {:key tag}
+                [:input {:type "checkbox"
+                         :checked (if (get @tags tag) "checked" "")
+                         :on-change (fn [_]
+                                      (swap! tags assoc tag
+                                             (not (get @tags tag))))}]
+                tag]))])))
 
-(defn get-tags
+(defn get-tag-selections
   {:malli/schema [:=> [:cat DataMap] [:map-of Tag :boolean]]}
   [data-map]
   (into {} (map (fn [tag] [tag true])
                 (reduce union (map :tags (vals data-map))))))
+
+(defn get-selected-tags
+  {:malli/schema [:=> [:cat [:map-of Tag :boolean] [:set Tag]]
+                  [:set Tag]]}
+  [tag-selections tags]
+  (into #{} (filter #(get tag-selections %) tags)))
+
+(defn make-tag-hiccup
+  {:malli/schema [:=> [:cat [:set Tag] [:set Tag]]
+                  Hiccup]}
+  [tags selected-tags]
+  [:p "Tags: "
+    (interpose ", " (map #(if (selected-tags %)
+                            [:strong {:key %} %]
+                            [:span {:key %} %])
+                         (sort tags)))])
+  
 
 ; TODO animate the swapping!
 (defn ^:export aggregated-items
@@ -193,7 +226,7 @@
   ...
   ```
 
-  Swaps to
+  Or
 
   ```
   Ingredient 1:
@@ -206,35 +239,35 @@
    ...
   ...
   ```
-
-  when clicking the 'swap' button."
-  {:malli/schema [:=> [:cat DataMap DataMap] ReagentComponent]}
-  [experience-map outcome-map]
-  (let [swapped (r/atom false)
-        get-data (fn [] (if @swapped outcome-map experience-map))
-        tags (r/atom (get-tags experience-map))]
-    (fn []
+  "
+  {:malli/schema [:=> [:cat :string :string DataMap] ReagentComponent]}
+  [data-name other-name data-map]
+  (let [tag-selections (r/atom (get-tag-selections data-map))]
+    (fn [data-name other-name data-map]
       ; This extra into is necessary since we are dereferencing @swapped
       ; See https://github.com/reagent-project/reagent/issues/18
       (into [:div
-             [:h2 (if @swapped "Outcomes" "Experiences")]
-             [:button {:on-click (fn [] (reset! swapped (not @swapped))
-                                        (reset! tags (get-tags (get-data))))}
-              "Swap!"]
-             [:div [dropdown-check-list tags]]] 
+             [:h2 data-name]
+             [:div [dropdown-check-list tag-selections]]] 
             (for [[item-name {:keys [details tags children]}]
-                  (get-data)]
+                  data-map
+                  :let [selected-tags (get-selected-tags @tag-selections tags)]
+                  :when (not (empty? (intersection selected-tags tags)))]
               [:div {:key item-name}
-               [:h3 item-name (anchor item-name)] 
-               [:p "Tags: " (join ", " (sort tags))]
-               [:p details " " (if @swapped "Experiences: " "Outcomes: ")]
+               [:h3 (my-md->hiccup item-name) (anchor item-name)] 
+               (make-tag-hiccup tags selected-tags)
+               [:p (my-md->hiccup details) " " other-name ":"]
                (list-to-hiccup children)])))))
 
 (defn ^:export make-aggregated-items
   {:malli/schema [:=> [:cat Experiences] ReagentComponent]}
   [raw-experiences]
-  (aggregated-items (make-experience-map raw-experiences)
-                    (make-outcome-map raw-experiences)))
+  (fn []
+    [:div
+      [aggregated-items "Experiences" "Outcomes"
+                        (make-experience-map raw-experiences)]
+      [aggregated-items "Outcomes" "Experiences"
+                        (make-outcome-map raw-experiences)]]))
 
 (defn home-page []
   (fn []
