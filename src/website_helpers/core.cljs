@@ -16,16 +16,21 @@
 
 (defn my-md->hiccup
   [string]
-  (last (last (component (md->hiccup string)))))
+  (rest (rest (last (component (md->hiccup string))))))
 
 (my-md->hiccup "[Slipways](https://slipways.net/)")
+
+(my-md->hiccup   "This includes watching videos from channels like
+  [Veritasium](https://www.youtube.com/user/1veritasium), 
+  [CGP Grey](https://www.youtube.com/user/CGPGrey),
+  and [Kurzgesagt](https://www.youtube.com/user/Kurzgesagt).")
 
 (defn get-raw-string
   "Removes links or other hiccup wrappers from a string."
   [string]
   (if (string? string)
     string
-    (last string)))
+    (get-raw-string (last string))))
 
 (defn anchor-string
   [item-name]
@@ -61,9 +66,9 @@
   [strings]
   [:ul
    (for [s strings
-         :let [hiccup (my-md->hiccup s)]]
+         :let [hiccup (first (my-md->hiccup s))]]
      [:li {:key s}
-      (into (anchor hiccup) (get-raw-string hiccup))])])
+      (into (anchor hiccup) hiccup)])])
 ; (meta #'list-to-hiccup)
 
 (def Name :string)
@@ -136,7 +141,10 @@
     in the movie 'The Alpinist'."]
      ["Being in the Zone"]]]
    ["Redditing"
-    "Browsing reddit."
+    "This includes watching videos from channels like
+  [Veritasium](https://www.youtube.com/user/1veritasium), 
+  [CGP Grey](https://www.youtube.com/user/CGPGrey),
+  and [Kurzgesagt](https://www.youtube.com/user/Kurzgesagt)."
     ["habit"]
     [["Easy to do"
       "Requires little to no difficult decision making, so is therefore easy to
@@ -361,7 +369,6 @@
   (let [similarities (get-all-similarities data-map)
         start-name (first (sort (keys data-map)))
         sorted-names (-get-rest start-name similarities)]
-    (prn "Sorted names like " sorted-names)
     (into (sorted-map) (for [name sorted-names]
                         [name (get data-map name)]))))
 
