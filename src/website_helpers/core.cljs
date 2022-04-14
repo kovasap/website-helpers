@@ -1,7 +1,7 @@
 (ns website-helpers.core
   (:require
     [cljs.reader]
-    [clojure.string :refer [replace join]]
+    [clojure.string :refer [split replace join includes?]]
     [clojure.set :refer [union intersection]]
     [clojure.walk :refer [postwalk]]
     [reagent.core :as r]
@@ -274,6 +274,25 @@
 
 (make-mental-state-map example-experiences)
 
+(defn parse-params
+  "Parse URL parameters into a hashmap"
+  []
+  (let [url (.-location js/window)
+        param-strs (-> url (split #"\?") last (split #"\&"))]
+    (if (includes? (str url) "?")
+      (into {} (map #(split % #"=") param-strs))
+      {})))
+
+(defn sync-url-tag-params!
+  {:malli/schema [:=> [:cat [:map-of Tag :boolean]] :nil]}
+  [tags]
+  (let [url (js/URL. (. js/window -location))]
+    (doseq [[tag value] tags]
+      (if value
+        (.. url -searchParams (set tag value))
+        (.. url -searchParams (delete tag)))
+      (.. js/window -history (pushState nil "" (.toString url))))))
+
 (defn dropdown-check-list
   {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of Tag :boolean]
                   ReagentComponent]}
@@ -292,14 +311,16 @@
                          :checked (if (get @tags tag) "checked" "")
                          :on-change (fn [_]
                                       (swap! tags assoc tag
-                                             (not (get @tags tag))))}]
+                                             (not (get @tags tag)))
+                                      (sync-url-tag-params! @tags))}]
                 tag]))])))
 
 (defn get-tag-selections
   {:malli/schema [:=> [:cat DataMap] [:map-of Tag :boolean]]}
   [data-map]
-  (into {} (map (fn [tag] [tag false])
-                (reduce union (map :tags (vals data-map))))))
+  (let [url-params (parse-params)]
+    (into {} (for [tag (reduce union (map :tags (vals data-map)))]
+                [tag (contains? url-params tag)]))))
 
 (defn get-selected-tags
   "If no tags are selected, all are!"
