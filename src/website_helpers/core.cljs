@@ -2,7 +2,7 @@
   (:require
     [cljs.reader]
     [clojure.string :refer [split replace join includes?]]
-    [clojure.set :refer [union intersection]]
+    [clojure.set :refer [union intersection subset?]]
     [clojure.walk :refer [postwalk]]
     [reagent.core :as r]
     [reagent.dom :as d]
@@ -324,12 +324,14 @@
 
 (defn get-selected-tags
   "If no tags are selected, all are!"
-  {:malli/schema [:=> [:cat [:map-of Tag :boolean] [:set Tag]]
+  {:malli/schema [:=> [:cat [:map-of Tag :boolean]]
                   [:set Tag]]}
-  [tag-selections tags]
+  [tag-selections]
   (if (every? #(not %) (vals tag-selections))
     (set (keys tag-selections))
-    (set (filter #(get tag-selections %) tags))))
+    (set (for [[tag selected] tag-selections
+               :when selected]
+           tag))))
 
 (defn make-tag-hiccup
   {:malli/schema [:=> [:cat [:set Tag] [:set Tag]]
@@ -441,10 +443,10 @@
              [:div [dropdown-check-list tag-selections]]] 
             (for [[item-name {:keys [details tags children]}]
                   (sort-by-tags data-map)
-                  :let [selected-tags (get-selected-tags @tag-selections tags)
+                  :let [selected-tags (get-selected-tags @tag-selections)
                         hiccup-name (my-md->hiccup item-name)]
                   :when (or (= (count selected-tags) (count @tag-selections))
-                            (not (empty? (intersection selected-tags tags))))]
+                            (subset? selected-tags tags))]
               [:div {:key item-name}
                [:h3 {:id (anchor-string hiccup-name)} hiccup-name
                 (anchor hiccup-name)] 
