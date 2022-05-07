@@ -1,5 +1,6 @@
 (ns website-helpers.core
   (:require
+    [website-helpers.graph :as g]
     [cljs.reader]
     [clojure.string :refer [split replace join includes?]]
     [clojure.set :refer [union intersection subset?]]
@@ -464,9 +465,18 @@
       [aggregated-items "States of Mind" "Experiences"
                         (make-mental-state-map raw-experiences)]]))
 
+(def page-graph
+  (r/atom {:nodes [{:name "Home" :size 5 :id "Home"}
+                   {:name "Mind" :size 5 :id "Mind"}]
+           :links [{:source 0 :target 1 :value 2}]}))
+
+
 (defn home-page []
   (fn []
-    [make-aggregated-items example-experiences]))
+    [:div
+      [:p "hi"]
+      [g/viz (r/track g/prechew page-graph) "https://kovasap.github.io/"]
+      [make-aggregated-items example-experiences]]))
 
 ;; -------------------------
 ;; Initialize app
