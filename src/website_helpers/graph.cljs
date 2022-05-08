@@ -22,9 +22,10 @@
     (doto (js/d3.forceSimulation)
       (.stop)
       (.force "link" (-> (js/d3.forceLink)
-                         (.strength 1.2)
+                         (.strength 0.1)
                          (.id #(.-index %))))
-      (.force "charge" (js/d3.forceManyBody))
+      (.force "charge" (-> (js/d3.forceManyBody)
+                           (.strength -100)))
       (.force "center" (js/d3.forceCenter (/ width 2) (/ height 2)))
       (.on "tick" (fn []
                     (when-let [s (:links-sel @viz-state)]
@@ -100,16 +101,18 @@
         color (js/d3.scaleOrdinal (.-schemeSet1 js/d3))
         add-circle (fn [sel]
                      (rid3-> sel
-                             (.append "circle")
+                             (.append "ellipse")
                              {:stroke         "#fff"
                               :stroke-width   1.5
-                              :r              #(.-size %)
-                              :fill           #(color (.-group %))
-                              :fill-opacity   #(.-opacity %)}))
+                              :rx             #(* 5 (count (.-name %)))
+                              :ry             #(max 25 (.-size %))
+                              :fill           #(do (prn (.-group %) (color (.-group %))) (color (.-group %)))
+                              :fill-opacity   0.7}))
         add-text (fn [sel]
                    (rid3-> sel
                            (.append "text")
-                           (.text #(.-size %))))]
+                           {:text-anchor "middle"}
+                           (.text #(.-name %))))]
     (fn [ratom]
       [rid3/viz
        {:id     "rid3-force-demo"
@@ -146,7 +149,10 @@
                                (add-circle sel)
                                (add-text sel)
                                (rid3-> sel
-                                       (.call drag)))
+                                 (.on "dblclick"
+                                      (fn [_event node]
+                                        (js/window.open (str base-link (.-path node)))))
+                                 (.call drag)))}
                   ; :did-mount
                   ; (fn [sel _ratom]
                   ;   (swap! viz-state assoc :nodes-sel sel)
@@ -174,18 +180,18 @@
                   ;                (fn [_event node]
                   ;                  (js/window.open (str base-link (.-link node)))))
                   ;           (.call drag)))
-                  :children
-                  [{:kind :elem-with-data
-                    :class "circles"
-                    :tag "circle"
-                    :prepare-dataset (fn [ratom] (:nodes @ratom))
-                    :did-mount (fn [sel _ratom]
-                                 (rid3-> sel
-                                         {:stroke         "#fff"
-                                          :stroke-width   1.5
-                                          :r              #(.-size %)
-                                          :fill           #(color (.-group %))
-                                          :fill-opacity   #(.-opacity %)}))}]}
+                  ; :children
+                  ; [{:kind :elem-with-data
+                  ;   :class "circles"
+                  ;   :tag "circle"
+                  ;   :prepare-dataset (fn [ratom] (:nodes @ratom))
+                  ;   :did-mount (fn [sel _ratom]
+                  ;                (rid3-> sel
+                  ;                        {:stroke         "#fff"
+                  ;                         :stroke-width   1.5
+                  ;                         :r              #(.-size %)
+                  ;                         :fill           #(color (.-group %))
+                  ;                         :fill-opacity   #(.-opacity %)}))}]}
                  ;; We put this last so that it renders above the
                  ;; nodes and links - svg is order dependant like
                  ;; that.

@@ -532,34 +532,91 @@
                {:name "influences.md", :size 250}
                {:name "what-and-why.md", :size 8752}]}])
 
+(defn tree-seq-adding-path
+  "Like tree-seq, but takes in a tree of maps and a unique :path key to each map.
+  
+  See https://clojuredocs.org/clojure.core/tree-seq#example-62780fc7e4b0b1e3652d75ea"
+  [branch? children root]
+  (let [walk (fn walk [path node]
+               (lazy-seq
+                (cons (assoc node :path (str path "/" (:name node)))
+                 (when (branch? node)
+                   (mapcat (partial walk (str path "/" (:name node)))
+                           (children node))))))]
+    (walk nil root)))
+
 (defn get-idxed-nodes
   [tree]
-  (into {} (map-indexed
-             (fn [i n] [(dissoc n :children) i])
-             (tree-seq associative? :children {:name "root" :children tree}))))
-
-(defn get-child-to-parent-links
-  [tree]
-  (reduce merge
-    (for [subtree
-          (tree-seq associative? :children {:name "root" :children tree})]
-      (into {} (for [child (:children subtree)]
-                 [(:name child) (:name subtree)])))))
+  (let [idxed-nodes
+        (map-indexed
+           (fn [i n] (assoc n :idx i))
+           (tree-seq-adding-path associative? :children
+                                 {:name "root" :children tree}))
+        idxes-by-path (into {} (for [node idxed-nodes]
+                                 [(:path node) (:idx node)]))]
+    ; Now we update the one level deep children with the indicies
+    (for [n idxed-nodes]
+      (update n :children
+              (fn [children]
+                (into [] (for [c children]
+                           (assoc c :idx (get idxes-by-path
+                                              (str (:path n) "/" (:name c)))))))))))
 
 (get-idxed-nodes page-tree)
-(get-child-to-parent-links page-tree)
 
+(defn get-links
+  [tree]
+  (reduce concat
+    (for [subtree (get-idxed-nodes tree)]
+      (into [] (for [child (:children subtree)]
+                 {:source (:idx child)
+                  :target (:idx subtree)
+                  :value 6})))))
+
+
+(defn update-nodes
+  [nodes & update-fns]
+  (into [] (for [n nodes]
+             ((apply comp update-fns) n))))
+
+(defn scale-size
+  [node]
+  (update node :size #(Math/sqrt (/ % 10))))
+
+(defn assign-group
+  [node]
+  (assoc node :group (if (= 4096 (:size node)) ; is a directory
+                       2
+                       3)))
+
+(defn strip-extension
+  [node]
+  (-> node
+      (update :name #(first (split % #"\.")))
+      (update :path #(first (split % #"\.")))))
+
+(defn fix-path
+  [node]
+  (update node :path #(replace % #"/root/" "docs/")))
+                       
 
 (defn page-tree-to-graph
   [page-tree]
-  {:nodes (sort (get-idxed-nodes))
-   :links})
-  
+  {:nodes (update-nodes (get-idxed-nodes page-tree)
+                        fix-path strip-extension scale-size assign-group)
+   :links (get-links page-tree)})
 
-(def page-graph-data
+(get-links page-tree)
+(page-tree-to-graph page-tree)
+
+
+(def page-graph-data-simple
   (r/atom {:nodes [{:name "Home" :size 5 :id "Home"}
                    {:name "Mind" :size 5 :id "Mind"}]
            :links [{:source 0 :target 1 :value 2}]}))
+
+(def page-graph-data
+  (r/atom (page-tree-to-graph page-tree)))
 
 
 (defn page-graph
