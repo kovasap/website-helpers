@@ -630,9 +630,8 @@
 
 
 (defn page-graph
-  [page-tree-string]
-  (let [page-tree (read-edn-string page-tree-string)
-        page-graph-data (r/atom (page-tree-to-graph page-tree))]
+  [page-tree]
+  (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
     [:div
       [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"]]))
 
