@@ -629,7 +629,7 @@
   (r/atom (page-tree-to-graph example-page-tree)))
 
 
-(defn page-graph
+(defn ^:export page-graph
   [page-tree]
   (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
     [:div
