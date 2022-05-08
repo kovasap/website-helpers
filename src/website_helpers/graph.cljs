@@ -1,5 +1,6 @@
 ;; Taken from https://gist.github.com/prook/9e5cc9144d34a991978a2fd31b4ee487
 ;; and comment thread https://github.com/gadfly361/rid3/issues/10.
+;; See documentation at https://github.com/d3/d3-force
 
 (ns website-helpers.graph 
   (:require
@@ -25,8 +26,9 @@
                          (.strength 0.1)
                          (.id #(.-index %))))
       (.force "charge" (-> (js/d3.forceManyBody)
-                           (.strength -100)))
+                           (.strength -80)))
       (.force "center" (js/d3.forceCenter (/ width 2) (/ height 2)))
+      (.force "collide" (js/d3.forceCollide 50))
       (.on "tick" (fn []
                     (when-let [s (:links-sel @viz-state)]
                       (rid3-> s
@@ -88,8 +90,8 @@
 
 (defn viz
   [ratom base-link]
-  (let [viz-state (atom {:width 1000
-                         :height 1000
+  (let [viz-state (atom {:width 1200
+                         :height 1500
                          :hover-text-sel nil
                          :links-sel nil
                          :nodes-sel nil})
@@ -125,10 +127,10 @@
                              {:width   width
                               :height  height
                               :viewBox #js [0 0 width height]}))
-                   (update-sim! sim 1 @ratom))
+                   (update-sim! sim 4 @ratom))
                  :did-update
                  (fn [svg ratom]
-                   (update-sim! sim 0.3 @ratom))}
+                   (update-sim! sim 0.5 @ratom))}
         :pieces [{:kind            :elem-with-data
                   :class           "links"
                   :tag             "line"
