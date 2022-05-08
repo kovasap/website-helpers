@@ -2,7 +2,7 @@
   (:require
     [website-helpers.graph :as g]
     [cljs.reader]
-    [clojure.string :refer [split replace join includes?]]
+    [clojure.string :refer [split replace join includes? capitalize]]
     [clojure.set :refer [union intersection subset?]]
     [clojure.walk :refer [postwalk]]
     [reagent.core :as r]
@@ -465,7 +465,7 @@
       [aggregated-items "States of Mind" "Experiences"
                         (make-mental-state-map raw-experiences)]]))
 
-(def page-tree
+(def example-page-tree
   [{:name "manifesto.md", :size 10074}
    {:name "climbing", :size 4096,
     :children [{:name "media.md", :size 592}
@@ -551,7 +551,7 @@
         (map-indexed
            (fn [i n] (assoc n :idx i))
            (tree-seq-adding-path associative? :children
-                                 {:name "root" :children tree}))
+                                 {:name "home" :children tree}))
         idxes-by-path (into {} (for [node idxed-nodes]
                                  [(:path node) (:idx node)]))]
     ; Now we update the one level deep children with the indicies
@@ -561,8 +561,6 @@
                 (into [] (for [c children]
                            (assoc c :idx (get idxes-by-path
                                               (str (:path n) "/" (:name c)))))))))))
-
-(get-idxed-nodes page-tree)
 
 (defn get-links
   [tree]
@@ -585,9 +583,10 @@
 
 (defn assign-group
   [node]
-  (assoc node :group (if (= 4096 (:size node)) ; is a directory
-                       2
-                       3)))
+  (assoc node :group (cond
+                       (nil? (:children node)) 1
+                       (= 0 (count (:children node))) 2
+                       (<= 0 (count (:children node))) 3)))
 
 (defn strip-extension
   [node]
@@ -597,17 +596,28 @@
 
 (defn fix-path
   [node]
-  (update node :path #(replace % #"/root/" "docs/")))
+  (update node :path #(replace % #"/home" "docs/")))
+
+(defn capitalize-words 
+  "Capitalize every word in a string"
+  [s]
+  (->> (split (str s) #"\b") 
+       (map capitalize)
+       (join)))
+
+(defn prettify-name
+  [node]
+  (update node :name #(-> %
+                         (replace #"-" " ")
+                         (capitalize-words))))
                        
 
 (defn page-tree-to-graph
   [page-tree]
   {:nodes (update-nodes (get-idxed-nodes page-tree)
-                        fix-path strip-extension scale-size assign-group)
+                        prettify-name fix-path strip-extension scale-size
+                        assign-group)
    :links (get-links page-tree)})
-
-(get-links page-tree)
-(page-tree-to-graph page-tree)
 
 
 (def page-graph-data-simple
@@ -615,20 +625,23 @@
                    {:name "Mind" :size 5 :id "Mind"}]
            :links [{:source 0 :target 1 :value 2}]}))
 
-(def page-graph-data
-  (r/atom (page-tree-to-graph page-tree)))
+(def example-page-graph-data
+  (r/atom (page-tree-to-graph example-page-tree)))
 
 
 (defn page-graph
-  [input]
-  (prn input))
-
+  [page-tree-string]
+  (let [page-tree (read-edn-string page-tree-string)
+        page-graph-data (r/atom (page-tree-to-graph page-tree))]
+    [:div
+      [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"]]))
 
 (defn home-page []
   (fn []
     [:div
       [:p "hi"]
-      [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"]
+      [g/viz (r/track g/prechew example-page-graph-data)
+       "https://kovasap.github.io/"]
       [make-aggregated-items example-experiences]]))
 
 ;; -------------------------

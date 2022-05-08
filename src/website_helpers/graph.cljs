@@ -98,7 +98,8 @@
         ;; See
         ;; https://github.com/d3/d3-scale-chromatic/blob/main/README.md#api-reference
         ;; for options.
-        color (js/d3.scaleOrdinal (.-schemeSet1 js/d3))
+        ;; See https://stackoverflow.com/a/21208204 for custom schemes.
+        color (js/d3.scaleOrdinal ["#377eb8" "#4daf4a" "#984ea3" "#ff7f00"]) 
         add-circle (fn [sel]
                      (rid3-> sel
                              (.append "ellipse")
@@ -106,7 +107,7 @@
                               :stroke-width   1.5
                               :rx             #(* 5 (count (.-name %)))
                               :ry             #(max 25 (.-size %))
-                              :fill           #(do (prn (.-group %) (color (.-group %))) (color (.-group %)))
+                              :fill           #(color (.-group %))
                               :fill-opacity   0.7}))
         add-text (fn [sel]
                    (rid3-> sel
@@ -115,7 +116,7 @@
                            (.text #(.-name %))))]
     (fn [ratom]
       [rid3/viz
-       {:id     "rid3-force-demo"
+       {:id     "force-graph"
         :ratom  ratom
         :svg    {:did-mount
                  (fn [svg ratom]
@@ -144,73 +145,19 @@
                   :class           "nodes"
                   :tag             "g"
                   :prepare-dataset (fn [ratom] (:nodes @ratom))
+                  ; See
+                  ; https://github.com/kovasap/reddit-tree/blob/main/src/reddit_tree/graph.cljs
+                  ; for more possibilities here.
                   :did-mount (fn [sel _ratom]
                                (swap! viz-state assoc :nodes-sel sel)
+                               ; Based on https://stackoverflow.com/a/47401796
                                (add-circle sel)
                                (add-text sel)
                                (rid3-> sel
                                  (.on "dblclick"
                                       (fn [_event node]
                                         (js/window.open (str base-link (.-path node)))))
-                                 (.call drag)))}
-                  ; :did-mount
-                  ; (fn [sel _ratom]
-                  ;   (swap! viz-state assoc :nodes-sel sel)
-                  ;   (rid3-> sel
-                  ;           {:stroke         "#fff"
-                  ;            :stroke-width   1.5
-                  ;            :r              #(.-size %)
-                  ;            :fill           #(color (.-group %))
-                  ;            :fill-opacity   #(.-opacity %)}
-                  ;           (.html #(html [:div [:p (.-name %)]]))
-                  ;           (.on "mouseover"
-                  ;                (fn [_event node]
-                  ;                  (-> (js/d3.selectAll (gstring/format ".c%s" (.-id node)))
-                  ;                    (.attr "pointer-events" "all")
-                  ;                    (.attr "x" (- (.-x node) 150))
-                  ;                    (.attr "y" (+ (.-y node) 10))
-                  ;                    (.classed "hovered" true)
-                  ;                    (.classed "fade-out-active" false))))
-                  ;           (.on "mouseout"
-                  ;                (fn [_event node]
-                  ;                  (-> (js/d3.selectAll (gstring/format ".c%s" (.-id node)))  ;; :hover-text-sel @viz-state)
-                  ;                    (.attr "pointer-events" "none")
-                  ;                    (.classed "fade-out-active" true))))
-                  ;           (.on "dblclick"
-                  ;                (fn [_event node]
-                  ;                  (js/window.open (str base-link (.-link node)))))
-                  ;           (.call drag)))
-                  ; :children
-                  ; [{:kind :elem-with-data
-                  ;   :class "circles"
-                  ;   :tag "circle"
-                  ;   :prepare-dataset (fn [ratom] (:nodes @ratom))
-                  ;   :did-mount (fn [sel _ratom]
-                  ;                (rid3-> sel
-                  ;                        {:stroke         "#fff"
-                  ;                         :stroke-width   1.5
-                  ;                         :r              #(.-size %)
-                  ;                         :fill           #(color (.-group %))
-                  ;                         :fill-opacity   #(.-opacity %)}))}]}
-                 ;; We put this last so that it renders above the
-                 ;; nodes and links - svg is order dependant like
-                 ;; that.
-                 {:kind            :elem-with-data
-                  :class           "hover-text"
-                  :tag             "foreignObject"
-                  :prepare-dataset (fn [ratom] (:nodes @ratom))
-                  :did-mount 
-                  (fn [sel _ratom]
-                    (swap! viz-state assoc :hover-text-sel sel)
-                    (rid3-> sel
-                            {:cx -100
-                             :cy -100
-                             :width 1
-                             :height 1
-                             :opacity 0
-                             :class #(str "c" (.-id %))}
-                            (.html #(html [:div {:class "hover-text-div"}
-                                           [:p (.-name %)]]))))}]}])))
+                                 (.call drag)))}]}])))
 
 (defn prechew
   [app-state]
