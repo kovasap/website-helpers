@@ -1,6 +1,8 @@
 #!/bin/bash
 
-clj -A:shadow-cljs release website_helpers
+# Using compile instead of release because of
+# https://github.com/gadfly361/rid3/issues/10#issuecomment-962701995
+clj -A:shadow-cljs compile website_helpers
 
 rm -r release
 mkdir release
