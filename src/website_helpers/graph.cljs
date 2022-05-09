@@ -23,10 +23,10 @@
     (doto (js/d3.forceSimulation)
       (.stop)
       (.force "link" (-> (js/d3.forceLink)
-                         (.strength 0.1)
+                         (.strength 0.08)
                          (.id #(.-index %))))
       (.force "charge" (-> (js/d3.forceManyBody)
-                           (.strength -80)))
+                           (.strength -100)))
       (.force "center" (js/d3.forceCenter (/ width 2) (/ height 2)))
       (.force "collide" (js/d3.forceCollide 50))
       (.on "tick" (fn []
