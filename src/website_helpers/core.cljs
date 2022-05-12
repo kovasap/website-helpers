@@ -630,11 +630,12 @@
 
 
 (defn ^:export page-graph
-  [page-tree]
+  [page-tree options]
   (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
     (fn []
       [:div
-        [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"]])))
+        [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
+         (js->clj options :keywordize-keys true)]])))
 
 (defn home-page []
   (fn []

@@ -19,16 +19,18 @@
 
 (defn create-sim
   [viz-state]
-  (let [{:keys [width height]} @viz-state]
+  (let [{:keys [width height link-strength charge-strength center-x center-y
+                collide-size]}
+        @viz-state]
     (doto (js/d3.forceSimulation)
       (.stop)
       (.force "link" (-> (js/d3.forceLink)
-                         (.strength 0.08)
+                         (.strength link-strength)
                          (.id #(.-index %))))
       (.force "charge" (-> (js/d3.forceManyBody)
-                           (.strength -100)))
-      (.force "center" (js/d3.forceCenter (/ width 2) (/ height 2)))
-      (.force "collide" (js/d3.forceCollide 50))
+                           (.strength charge-strength)))
+      (.force "center" (js/d3.forceCenter center-x center-y))
+      (.force "collide" (js/d3.forceCollide collide-size))
       (.on "tick" (fn []
                     (when-let [s (:links-sel @viz-state)]
                       (rid3-> s
@@ -89,12 +91,19 @@
       (.restart))))
 
 (defn viz
-  [ratom base-link]
-  (let [viz-state (atom {:width 1200
-                         :height 1500
-                         :hover-text-sel nil
-                         :links-sel nil
-                         :nodes-sel nil})
+  [ratom base-link state-override-map]
+  ; TODO make this width and height the size of the user's screen by default
+  (let [viz-state (atom (merge {:width 2000
+                                :height 1500
+                                :link-strength 0.08
+                                :charge-strength -100
+                                :center-x 1000
+                                :center-y 750
+                                :collide-size 50
+                                :hover-text-sel nil
+                                :links-sel nil
+                                :nodes-sel nil}
+                               state-override-map))
         sim (create-sim viz-state)
         drag (create-drag sim)
         ;; See
@@ -114,7 +123,8 @@
         add-text (fn [sel]
                    (rid3-> sel
                            (.append "text")
-                           {:text-anchor "middle"}
+                           {:text-anchor "middle"
+                            :y 5}
                            (.text #(.-name %))))]
     (fn [ratom]
       [rid3/viz
