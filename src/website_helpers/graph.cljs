@@ -100,6 +100,7 @@
                                 :center-x 1000
                                 :center-y 750
                                 :collide-size 50
+                                :initial-alpha 4
                                 :hover-text-sel nil
                                 :links-sel nil
                                 :nodes-sel nil}
@@ -132,12 +133,12 @@
         :ratom  ratom
         :svg    {:did-mount
                  (fn [svg ratom]
-                   (let [{:keys [width height]} @viz-state]
+                   (let [{:keys [width height initial-alpha]} @viz-state]
                      (rid3-> svg
                              {:width   width
                               :height  height
-                              :viewBox #js [0 0 width height]}))
-                   (update-sim! sim 4 @ratom))
+                              :viewBox #js [0 0 width height]})
+                     (update-sim! sim initial-alpha @ratom)))
                  :did-update
                  (fn [svg ratom]
                    (update-sim! sim 0.5 @ratom))}
