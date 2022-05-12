@@ -100,6 +100,7 @@
                                 :center-x 1000
                                 :center-y 750
                                 :collide-size 50
+                                ; The initial "temperature" of the simulation.
                                 :initial-alpha 4
                                 :hover-text-sel nil
                                 :links-sel nil
