@@ -15,9 +15,9 @@
 
 
 (def example-notes
-  [{:name "1" :path "content/docs/one.md" :categories ["a" "b"]}
-   {:name "2" :path "content/docs/two.md" :categories ["a"]}
-   {:name "3" :path "content/docs/thr.md" :categories ["c"]}])
+  [{:name "1" :path "content/docs/one.md" :title "one" :categories ["a" "b"]}
+   {:name "2" :path "content/docs/two.md" :title "two" :categories ["a"]}
+   {:name "3" :path "content/docs/thr.md" :title "thr" :categories ["c"]}])
 
 
 (defn get-notes-by-category
@@ -48,26 +48,30 @@
    
 (defn make-subtree
   [notes-by-category]
-  [:ul (for [[category subtree] notes-by-category]
-         (if (= category :notes)
-           (for [note subtree]
-             (note-to-li note))
-           [:li {:key category}
-            [:details {:id category}
-             [:summary [:strong (capitalize category)]]
-             (make-subtree subtree)]]))])
+  (into [:ul] (reduce concat
+                      (for [[category subtree] notes-by-category]
+                        (if (= category :notes)
+                          (into [] (for [note subtree]
+                                     (note-to-li note)))
+                          [[:li {:key category}
+                            [:details {:id category}
+                             [:summary [:strong (capitalize category)]]
+                             (make-subtree subtree)]]])))))
   
 
 (defn make-flat-category-menu
   "Every category gets its own place in the top-level menu, meaning that notes   
   with multiple categories will appear in multiple places."
-  {:malli/schema [:=> [:cat [:sequential Note]]
-                  Hiccup]}
-  [notes]
-  (make-subtree (get-notes-by-category notes)))
+  ; {:malli/schema [:=> [:cat [:sequential Note]]
+  ;                 Hiccup
+  [notes category-selections]
+  (make-subtree (select-keys (get-notes-by-category notes)
+                             (for [[category selected?] category-selections
+                                   :when selected?]
+                               category))))
+                               
 
-
-(make-flat-category-menu example-notes)
+(make-flat-category-menu example-notes {})
 
 
 (defn make-completely-nested-category-menu

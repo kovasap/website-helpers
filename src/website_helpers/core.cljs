@@ -1,6 +1,7 @@
 (ns website-helpers.core
   (:require
     [website-helpers.graph :as g]
+    [website-helpers.notes :as n]
     [cljs.reader]
     [clojure.string :refer [split replace join includes? capitalize]]
     [clojure.set :refer [union intersection subset?]]
@@ -557,44 +558,44 @@ advantage."
       (into {} (map #(split % #"=") param-strs))
       {})))
 
-(defn sync-url-tag-params!
-  {:malli/schema [:=> [:cat [:map-of Tag :boolean]] :nil]}
-  [tags]
+(defn sync-url-params!
+  {:malli/schema [:=> [:cat [:map-of :string :boolean]] :nil]}
+  [vars]
   (let [url (js/URL. (. js/window -location))]
-    (doseq [[tag value] tags]
+    (doseq [[var value] vars]
       (if value
-        (.. url -searchParams (set tag value))
-        (.. url -searchParams (delete tag)))
+        (.. url -searchParams (set var value))
+        (.. url -searchParams (delete var)))
       (.. js/window -history (pushState nil "" (.toString url))))))
 
 (defn dropdown-check-list
-  {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of Tag :boolean]
+  {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of :string :boolean]
                   ReagentComponent]}
-  [tags]
+  [vars title]
   (let [opened (r/atom false)]
     (fn []
       [:div {:id "tag-list"
              :class ["dropdown-check-list" (if @opened "visible" nil)]
              :tabIndex "100"}
        [:span {:class "anchor" :on-click #(reset! opened (not @opened))}
-        "Select Tags"]
+        title]
        (into [:ul {:class "items"}]
-             (for [tag (sort (keys @tags))]
-               [:li {:key tag}
+             (for [var (sort (keys @vars))]
+               [:li {:key var}
                 [:input {:type "checkbox"
-                         :checked (if (get @tags tag) "checked" "")
+                         :checked (if (get @vars var) "checked" "")
                          :on-change (fn [_]
-                                      (swap! tags assoc tag
-                                             (not (get @tags tag)))
-                                      (sync-url-tag-params! @tags))}]
-                tag]))])))
+                                      (swap! vars assoc var
+                                             (not (get @vars var)))
+                                      (sync-url-params! @vars))}]
+                var]))])))
 
-(defn get-tag-selections
-  {:malli/schema [:=> [:cat DataMap] [:map-of Tag :boolean]]}
-  [data-map]
+(defn get-url-param-selections
+  {:malli/schema [:=> [:cat [:sequential :string]] [:map-of :string :boolean]]}
+  [vars]
   (let [url-params (parse-params)]
-    (into {} (for [tag (reduce union (map :tags (vals data-map)))]
-                [tag (contains? url-params tag)]))))
+    (into {} (for [var vars]
+                [var (contains? url-params var)]))))
 
 (defn get-selected-tags
   "If no tags are selected, all are!"
@@ -708,13 +709,14 @@ advantage."
   "
   {:malli/schema [:=> [:cat :string :string DataMap] ReagentComponent]}
   [data-name other-name data-map]
-  (let [tag-selections (r/atom (get-tag-selections data-map))]
+  (let [tag-selections (r/atom (get-url-param-selections
+                                 (reduce union (map :tags (vals data-map)))))]
     (fn [data-name other-name data-map]
       ; This extra into is necessary since we are dereferencing @tag-selections
       ; See https://github.com/reagent-project/reagent/issues/18
       (into [:div
              [:h2 data-name]
-             [:div [dropdown-check-list tag-selections]]] 
+             [:div [dropdown-check-list tag-selections "Select Tags"]]] 
             (for [[item-name {:keys [details tags children]}]
                   (sort-by-tags data-map)
                   :let [selected-tags (get-selected-tags @tag-selections)
@@ -910,12 +912,23 @@ advantage."
         [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
          (js->clj options :keywordize-keys true)]])))
 
+(defn ^:export make-index-menu
+  ; {:malli/schema [:=> [:cat [:sequential n/Note] ReagentComponent]]}
+  [notes]
+  (let [category-selections (r/atom (get-url-param-selections
+                                      (keys (n/get-notes-by-category notes))))]
+    (fn []
+      [:div
+        [:div [dropdown-check-list category-selections "Select Categories"]] 
+        (n/make-flat-category-menu notes @category-selections)])))
+
 (defn home-page []
   (fn []
     [:div
       [:p "hi"]
       ; [g/viz (r/track g/prechew example-page-graph-data)
       ;  "https://kovasap.github.io/"]
+      [make-index-menu n/example-notes]
       [make-aggregated-items example-experiences]]))
 
 ;; -------------------------
