@@ -31,7 +31,7 @@
            {category {:notes #{note}}})))
 
 
-(get-notes-by-category example-notes)
+; (get-notes-by-category example-notes)
 
 
 (defn get-largest-category
@@ -45,7 +45,7 @@
                   [category (:notes notes-map)]))))))
 
 
-(get-largest-category example-notes #{})
+; (get-largest-category example-notes #{})
 
 
 (defn get-notes-by-largest-category
@@ -56,17 +56,13 @@
      (let [[largest-category largest-notes]
            (get-largest-category notes categories-to-ignore)
            other-notes (difference notes largest-notes)]
-       (prn largest-category)
-       (prn largest-notes)
-       (prn (count largest-notes))
-       (prn other-notes)
        (merge
          {largest-category (get-notes-by-largest-category
                              largest-notes (conj categories-to-ignore
                                                  largest-category))}
          (get-notes-by-largest-category other-notes categories-to-ignore))))))
 
-(get-notes-by-largest-category (set example-notes))
+; (get-notes-by-largest-category (set example-notes))
 
 
 (defn note-to-li
@@ -93,38 +89,27 @@
 
 
 (defn get-notes-for-categories
-  [notes category-selections]
-  (let [categories-to-include
-        (set (for [[category selected?] category-selections
-                   :when selected?]
-               category))]
-    (filter #(not (empty? (intersection categories-to-include (:categories %))))
-            notes)))
+  [notes selected-categories]
+  (filter #(not (empty? (intersection selected-categories (:categories %))))
+          notes))
 
-(get-notes-for-categories example-notes {"a" true})
+; (get-notes-for-categories example-notes {"a" true})
 
 (defn make-category-menu
-  [notes category-selections organization-fn]
-  (make-subtree (organization-fn (get-notes-for-categories
-                                   notes category-selections))))
+  [notes selected-categories organization-fn]
+  (-> (get-notes-for-categories notes selected-categories)
+    set
+    organization-fn
+    make-subtree))
 
+(def example-selected-categories #{"a" "b" "c"})
 
-(defn make-flat-category-menu
-  "Every category gets its own place in the top-level menu, meaning that notes   
-  with multiple categories will appear in multiple places."
-  ; {:malli/schema [:=> [:cat [:sequential Note]]
-  ;                 Hiccup
-  [notes category-selections]
-  (make-category-menu notes category-selections get-notes-by-category))
-                               
+; Every category gets its own place in the top-level menu, meaning that notes   
+; with multiple categories will appear in multiple places."
+; (make-category-menu
+;   example-notes example-selected-categories get-notes-by-category)
 
-(make-flat-category-menu example-notes {"a" true "b" true "c" true})
-
-
-(defn make-completely-nested-category-menu
-  [notes]
-  [])
-
-(defn make-largest-cat-nested-category-menu
-  [notes]
-  [])
+; Every note has a unique spot, as determined by nested categories (based on
+; the category's size).
+; (make-category-menu
+;   example-notes example-selected-categories get-notes-by-largest-category)

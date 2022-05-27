@@ -597,16 +597,16 @@ advantage."
     (into {} (for [var vars]
                 [var (contains? url-params var)]))))
 
-(defn get-selected-tags
-  "If no tags are selected, all are!"
-  {:malli/schema [:=> [:cat [:map-of Tag :boolean]]
-                  [:set Tag]]}
-  [tag-selections]
-  (if (every? #(not %) (vals tag-selections))
-    (set (keys tag-selections))
-    (set (for [[tag selected] tag-selections
+(defn get-selected-vars
+  "If no vars are selected, all are!"
+  {:malli/schema [:=> [:cat [:map-of :string :boolean]]
+                  [:set :string]]}
+  [selections]
+  (if (every? #(not %) (vals selections))
+    (set (keys selections))
+    (set (for [[var selected] selections
                :when selected]
-           tag))))
+           var))))
 
 (defn make-tag-hiccup
   {:malli/schema [:=> [:cat [:set Tag] [:set Tag]]
@@ -719,7 +719,7 @@ advantage."
              [:div [dropdown-check-list tag-selections "Select Tags"]]] 
             (for [[item-name {:keys [details tags children]}]
                   (sort-by-tags data-map)
-                  :let [selected-tags (get-selected-tags @tag-selections)
+                  :let [selected-tags (get-selected-vars @tag-selections)
                         hiccup-name (my-md->hiccup item-name)]
                   :when (or (= (count selected-tags) (count @tag-selections))
                             (subset? selected-tags tags))]
@@ -918,9 +918,11 @@ advantage."
   (let [category-selections (r/atom (get-url-param-selections
                                       (keys (n/get-notes-by-category notes))))]
     (fn []
-      [:div
-        [:div [dropdown-check-list category-selections "Select Categories"]] 
-        (n/make-flat-category-menu notes @category-selections)])))
+      (let [selected-categories (get-selected-vars @category-selections)]
+        [:div
+          [:div [dropdown-check-list category-selections "Select Categories"]] 
+          (n/make-category-menu
+            notes selected-categories n/get-notes-by-largest-category)]))))
 
 (defn home-page []
   (fn []
