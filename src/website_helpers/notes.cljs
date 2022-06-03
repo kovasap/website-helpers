@@ -96,7 +96,24 @@
   (filter #(not (empty? (intersection selected-categories (:categories %))))
           notes))
 
-; (get-notes-for-categories example-notes {"a" true})
+(get-notes-by-largest-category
+  (set (get-notes-for-categories example-notes #{"a 1"})))
+
+(defn notes-by-category-to-children-tree
+  "Converts a map produced by get-notes-by-category to a PageTree
+  readable by page_graph.cljs logic."
+  [notes-by-category]
+  (into []
+    (reduce concat
+      (for [[k v] notes-by-category]
+        (if (= :notes k)
+          (vec v)
+          [{:name k
+            :children (notes-by-category-to-children-tree v)}])))))
+
+(notes-by-category-to-children-tree
+  (get-notes-by-largest-category
+    (set (get-notes-for-categories example-notes #{"a 1"}))))
 
 (defn make-category-menu
   [notes selected-categories organization-fn]

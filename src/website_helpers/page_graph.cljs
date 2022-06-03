@@ -4,6 +4,11 @@
     [clojure.string :refer [split replace join capitalize]]
     [reagent.core :as r]))
 
+(def PageTree
+  [:map [:name :string]
+        [:size :int]
+        [:sequential PageTree]])
+
 (def example-page-tree
   [{:name "manifesto.md", :size 10074}
    {:name "climbing", :size 4096,
@@ -72,17 +77,22 @@
                {:name "what-and-why.md", :size 8752}]}])
 
 (defn tree-seq-adding-path
-  "Like tree-seq, but takes in a tree of maps and a unique :path key to each map.
+  "Like tree-seq, but takes in a tree of maps and a unique :tree-path key to
+  each map.
   
   See https://clojuredocs.org/clojure.core/tree-seq#example-62780fc7e4b0b1e3652d75ea"
   [branch? children root]
   (let [walk (fn walk [path node]
                (lazy-seq
-                (cons (assoc node :path (str path "/" (:name node)))
+                (cons (assoc node :tree-path (str path "/" (:name node)))
                  (when (branch? node)
                    (mapcat (partial walk (str path "/" (:name node)))
                            (children node))))))]
     (walk nil root)))
+
+
+(tree-seq-adding-path associative? :children
+                      {:name "home" :children example-page-tree})
 
 (defn get-idxed-nodes
   [tree]
@@ -92,14 +102,15 @@
            (tree-seq-adding-path associative? :children
                                  {:name "home" :children tree}))
         idxes-by-path (into {} (for [node idxed-nodes]
-                                 [(:path node) (:idx node)]))]
+                                 [(:tree-path node) (:idx node)]))]
     ; Now we update the one level deep children with the indicies
     (for [n idxed-nodes]
       (update n :children
               (fn [children]
                 (into [] (for [c children]
                            (assoc c :idx (get idxes-by-path
-                                              (str (:path n) "/" (:name c)))))))))))
+                                              (str (:tree-path n)
+                                                   "/" (:name c)))))))))))
 
 (defn get-links
   [tree]
@@ -131,11 +142,11 @@
   [node]
   (-> node
       (update :name #(first (split % #"\.")))
-      (update :path #(first (split % #"\.")))))
+      (update :tree-path #(first (split % #"\.")))))
 
 (defn fix-path
   [node]
-  (update node :path #(replace % #"/home" "docs/")))
+  (update node :tree-path #(replace % #"/home" "docs/")))
 
 (defn capitalize-words 
   "Capitalize every word in a string"

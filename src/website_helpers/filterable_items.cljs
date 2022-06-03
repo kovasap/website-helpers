@@ -462,6 +462,7 @@ advantage."
   
   This is done by computing a similarity score between every pair of items,
   then solving the travelling salesman problem given these pairs."
+  {:malli/schema [:=> [:cat DataMap] DataMap]}
   [data-map]
   (let [similarities (get-all-similarities data-map)
         start-name (first (sort (keys data-map)))

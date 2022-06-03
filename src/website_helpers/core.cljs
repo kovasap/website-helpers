@@ -11,6 +11,7 @@
     [clojure.set :refer [union intersection subset?]]
     [clojure.walk :refer [postwalk]]
     [reagent.dom :as d]
+    [reagent.core :as r]
     [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
 
@@ -44,8 +45,8 @@
   (fn []
     [:div
       [:p "hi"]
-      ; [g/viz (r/track g/prechew example-page-graph-data)
-      ;  "https://kovasap.github.io/"]
+      [g/viz (r/track g/prechew example-page-graph-data)
+       "https://kovasap.github.io/"]
       [n/make-index-menu n/example-notes]
       [make-aggregated-items example-experiences]]))
 
