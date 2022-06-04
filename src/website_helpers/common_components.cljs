@@ -14,7 +14,9 @@
       (.. js/window -history (pushState nil "" (.toString url))))))
 
 (defn dropdown-check-list
-  {:malli/schema [:=> [:cat :any] ; Actually an atom containing [:map-of :string :boolean]
+  {:malli/schema [:=> [:cat
+                       :any ; Actually an atom containing [:map-of :string :boolean]
+                       :string]
                   ReagentComponent]}
   [vars title]
   (let [opened (r/atom false)]

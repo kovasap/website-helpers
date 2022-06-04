@@ -2,7 +2,7 @@
   (:require
     [website-helpers.filterable-items :refer [make-aggregated-items
                                               example-experiences]]
-    [website-helpers.graph :as g]
+    [website-helpers.page-graph :refer [page-graph-from-notes]]
     [website-helpers.notes :as n]
     [website-helpers.utils :refer [get-selected-vars my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
@@ -45,8 +45,7 @@
   (fn []
     [:div
       [:p "hi"]
-      [g/viz (r/track g/prechew example-page-graph-data)
-       "https://kovasap.github.io/"]
+      [page-graph-from-notes n/example-notes]
       [n/make-index-menu n/example-notes]
       [make-aggregated-items example-experiences]]))
 

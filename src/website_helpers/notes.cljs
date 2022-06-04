@@ -14,13 +14,16 @@
         [:path :string]
         [:name :string]])
 
+(defn ex-note
+  [n categories]
+  {:name n :markdown (str "text " n) :path (str "content/docs/" n ".md")
+   :title (str "t-" n) :categories categories})
+
 (def example-notes
-  [{:name "1" :markdown "text 1" :path "content/docs/one.md" :title "one"
-    :categories #{"a 1" "b"}}
-   {:name "2" :markdown "text 1" :path "content/docs/two.md" :title "two"
-    :categories #{"a 1"}}
-   {:name "3" :markdown "text 1" :path "content/docs/thr.md" :title "thr"
-    :categories #{"c"}}])
+  [(ex-note "1" #{"a 1" "b"})
+   (ex-note "2" #{"a 1"})
+   (ex-note "3" #{"c"})
+   (ex-note "4" #{"a 1" "c"})])
 
 
 (defn get-notes-by-category
@@ -96,36 +99,47 @@
   (filter #(not (empty? (intersection selected-categories (:categories %))))
           notes))
 
-(get-notes-by-largest-category
-  (set (get-notes-for-categories example-notes #{"a 1"})))
-
 (defn notes-by-category-to-children-tree
-  "Converts a map produced by get-notes-by-category to a PageTree
+  "Converts a map produced by get-notes-by-category to a PageTree})]
   readable by page_graph.cljs logic."
-  [notes-by-category]
+  [notes-by-category categories-to-idx]
   (into []
     (reduce concat
       (for [[k v] notes-by-category]
         (if (= :notes k)
           (vec v)
           [{:name k
-            :children (notes-by-category-to-children-tree v)}])))))
+            :idx (get categories-to-idx k)
+            :children (notes-by-category-to-children-tree
+                        v categories-to-idx)}])))))
 
-(notes-by-category-to-children-tree
-  (get-notes-by-largest-category
-    (set (get-notes-for-categories example-notes #{"a 1"}))))
+(defn organize-notes-by-category
+  [notes selected-categories]
+  ; (get-notes-by-largest-category ; Change this for different organization!
+  (get-notes-by-category ; Change this for different organization!
+    (get-notes-for-categories notes selected-categories)))
+
+(defn index-categories
+  [categories num-notes]
+  (into {} (for [[i c] (map-indexed vector categories)]
+             [c (+ num-notes i)])))
+
+(let [categories #{"a 1" "c"}]
+  (notes-by-category-to-children-tree
+    (organize-notes-by-category example-notes categories)
+    (index-categories categories (count example-notes))))
 
 (defn make-category-menu
-  [notes selected-categories organization-fn]
-  (-> (get-notes-for-categories notes selected-categories)
-    set
-    organization-fn
-    make-subtree))
+  [notes selected-categories]
+  (make-subtree (organize-notes-by-category notes selected-categories)))
 
-(def example-selected-categories #{"a 1" "b" "c"})
+(defn get-category-selections
+  [notes]
+  (r/atom (get-url-param-selections
+            (set (keys (get-notes-by-category notes))))))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
-; with multiple categories will appear in multiple places."
+; with multiple categories will appear in multiple places.")
 ; (make-category-menu
 ;   example-notes example-selected-categories get-notes-by-category)
 
@@ -137,13 +151,9 @@
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   [notes]
-  (let [category-selections (r/atom (get-url-param-selections
-                                      (keys (get-notes-by-category notes))))]
+  (let [category-selections (get-category-selections notes)]
     (fn []
-      (let [selected-categories (get-selected-vars @category-selections)]
-        [:div
-          [:div [dropdown-check-list category-selections "Select Categories"]] 
-          (make-category-menu
-            notes selected-categories get-notes-by-largest-category)]))))
-
-
+      [:div
+        [:div [dropdown-check-list category-selections "Select Categories"]] 
+        (make-category-menu
+          notes (get-selected-vars @category-selections))])))

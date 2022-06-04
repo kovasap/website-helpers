@@ -581,11 +581,10 @@ advantage."
   [strings]
   [:ul
    (for [s strings
-         :let [hiccup (first (my-md->hiccup s))]]
+         :let [hiccup (rest (my-md->hiccup s))]]
      [:li {:key s}
-      (into (anchor hiccup) hiccup)])])
+      (conj (anchor hiccup) (get-raw-string hiccup))])])
 ; (meta #'list-to-hiccup)
-
 
 ; TODO animate the swapping!
 (defn ^:export aggregated-items
@@ -620,7 +619,8 @@ advantage."
   {:malli/schema [:=> [:cat :string :string DataMap] ReagentComponent]}
   [data-name other-name data-map]
   (let [tag-selections (r/atom (get-url-param-selections
-                                 (reduce union (map :tags (vals data-map)))))]
+                                 (set (reduce union
+                                              (map :tags (vals data-map))))))]
     (fn [data-name other-name data-map]
       ; This extra into is necessary since we are dereferencing @tag-selections
       ; See https://github.com/reagent-project/reagent/issues/18

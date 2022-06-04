@@ -1,6 +1,8 @@
 (ns website-helpers.page-graph
   (:require
     [website-helpers.graph :as g]
+    [website-helpers.notes :as n]
+    [website-helpers.utils :refer [get-selected-vars]]
     [clojure.string :refer [split replace join capitalize]]
     [reagent.core :as r]))
 
@@ -76,46 +78,51 @@
                {:name "influences.md", :size 250}
                {:name "what-and-why.md", :size 8752}]}])
 
-(defn tree-seq-adding-path
-  "Like tree-seq, but takes in a tree of maps and a unique :tree-path key to
-  each map.
-  
-  See https://clojuredocs.org/clojure.core/tree-seq#example-62780fc7e4b0b1e3652d75ea"
-  [branch? children root]
-  (let [walk (fn walk [path node]
-               (lazy-seq
-                (cons (assoc node :tree-path (str path "/" (:name node)))
-                 (when (branch? node)
-                   (mapcat (partial walk (str path "/" (:name node)))
-                           (children node))))))]
-    (walk nil root)))
-
-
-(tree-seq-adding-path associative? :children
-                      {:name "home" :children example-page-tree})
-
-(defn get-idxed-nodes
-  [tree]
-  (let [idxed-nodes
-        (map-indexed
-           (fn [i n] (assoc n :idx i))
-           (tree-seq-adding-path associative? :children
-                                 {:name "home" :children tree}))
-        idxes-by-path (into {} (for [node idxed-nodes]
-                                 [(:tree-path node) (:idx node)]))]
-    ; Now we update the one level deep children with the indicies
-    (for [n idxed-nodes]
-      (update n :children
-              (fn [children]
-                (into [] (for [c children]
-                           (assoc c :idx (get idxes-by-path
-                                              (str (:tree-path n)
-                                                   "/" (:name c)))))))))))
+; (defn tree-seq-adding-path
+;   "Like tree-seq, but takes in a tree of maps and a unique :tree-path key to
+;   each map.
+;   
+;   See https://clojuredocs.org/clojure.core/tree-seq#example-62780fc7e4b0b1e3652d75ea"
+;   [branch? children root]
+;   (let [walk (fn walk [path node]
+;                (lazy-seq
+;                 (cons (assoc node :tree-path (str path "/" (:name node)))
+;                  (when (branch? node)
+;                    (mapcat (partial walk (str path "/" (:name node)))
+;                            (children node))))))]
+;     (walk nil root)))
+; 
+; 
+; (tree-seq-adding-path associative? :children
+;                       {:name "home" :children example-page-tree})
+; 
+; (defn get-idxed-nodes
+;   [tree]
+;   (let [idxed-nodes
+;         (map-indexed
+;            (fn [i n] (assoc n :idx i))
+;            (tree-seq-adding-path associative? :children
+;                                  {:name "home" :children tree}))
+;         idxes-by-path (into {} (for [node idxed-nodes]
+;                                  [(:tree-path node) (:idx node)]))]
+;     (prn idxes-by-path)
+;     ; Now we update the one level deep children with the indicies
+;     (for [n idxed-nodes]
+;       (update n :children
+;               (fn [children]
+;                 (into [] (for [c children]
+;                            (assoc c :idx (get idxes-by-path
+;                                               (str (:tree-path n)
+;                                                    "/" (:name c)))))))))))
+; 
+; (get-idxed-nodes (n/notes-by-category-to-children-tree
+;                     (n/organize-notes-by-category
+;                       n/example-notes #{"a 1" "c"})))
 
 (defn get-links
-  [tree]
+  [all-subtrees]
   (reduce concat
-    (for [subtree (get-idxed-nodes tree)]
+    (for [subtree all-subtrees]
       (into [] (for [child (:children subtree)]
                  {:source (:idx child)
                   :target (:idx subtree)
@@ -129,7 +136,9 @@
 
 (defn scale-size
   [node]
-  (update node :size #(Math/sqrt (/ % 10))))
+  (update node :size #(if (nil? %)
+                        20
+                        (Math/sqrt (/ % 10)))))
 
 (defn assign-group
   [node]
@@ -164,11 +173,26 @@
 
 (defn page-tree-to-graph
   [page-tree]
-  {:nodes (update-nodes (get-idxed-nodes page-tree)
-                        prettify-name fix-path strip-extension scale-size
-                        assign-group)
-   :links (get-links page-tree)})
+  (let [all-subtrees (tree-seq associative? :children
+                               {:name "home"
+                                :children page-tree
+                                :idx 0})]
+    {:nodes (update-nodes all-subtrees
+                          prettify-name fix-path strip-extension scale-size
+                          assign-group)
+     :links (get-links all-subtrees)}))
 
+
+(tree-seq associative? :children
+          {:name "home"
+           :idx 0
+           :children 
+           (let [categories #{"a 1" "c"}
+                 notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i)))
+                                    n/example-notes)]
+             (n/notes-by-category-to-children-tree
+               (n/organize-notes-by-category notes categories)
+               (n/index-categories categories (count notes))))})
 
 (def page-graph-data-simple
   (r/atom {:nodes [{:name "Home" :size 5 :id "Home"}
@@ -180,10 +204,26 @@
 
 
 (defn ^:export page-graph
-  [page-tree options]
-  (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
-    (fn []
-      [:div
-        [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
-         (js->clj options :keywordize-keys true)]])))
+  ([page-tree]
+   (page-graph page-tree #js {}))
+  ([page-tree options]
+   (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
+     (fn []
+       (prn @page-graph-data)
+       [:div
+         [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
+          (js->clj options :keywordize-keys true)]]))))
 
+
+(defn ^:export page-graph-from-notes
+  [notes]
+  (let [category-selections (n/get-category-selections notes)
+        idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i))) notes)]
+    (fn []
+      (let [selected-categories (get-selected-vars @category-selections)]
+        [page-graph (n/notes-by-category-to-children-tree
+                      (n/organize-notes-by-category
+                        idxed-notes selected-categories)
+                      (n/index-categories selected-categories
+                                          (count idxed-notes)))]))))
+                      

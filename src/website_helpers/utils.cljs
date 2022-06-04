@@ -16,7 +16,7 @@
 
 (defn my-md->hiccup
   [string]
-  (rest (rest (last (component (md->hiccup string))))))
+  (into [:span] (rest (rest (last (component (md->hiccup string)))))))
 
 (my-md->hiccup "[Slipways](https://slipways.net/)")
 
@@ -35,7 +35,7 @@
       {})))
 
 (defn get-url-param-selections
-  {:malli/schema [:=> [:cat [:sequential :string]] [:map-of :string :boolean]]}
+  {:malli/schema [:=> [:cat [:set :string]] [:map-of :string :boolean]]}
   [vars]
   (let [url-params (parse-params)]
     (into {} (for [var vars]
