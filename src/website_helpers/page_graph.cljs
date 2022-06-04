@@ -128,6 +128,14 @@
                   :target (:idx subtree)
                   :value 6})))))
 
+(defn get-category-links
+  [nodes categories-to-idx]
+  (reduce concat
+          (for [node nodes]
+            (into [] (for [category (:categories node)]
+                       {:source (:idx node)
+                        :target (get categories-to-idx category)
+                        :value 6})))))
 
 (defn update-nodes
   [nodes & update-fns]
@@ -209,21 +217,48 @@
   ([page-tree options]
    (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
      (fn []
-       (prn @page-graph-data)
        [:div
          [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
           (js->clj options :keywordize-keys true)]]))))
 
 
+(defn notes-to-graph
+  [notes selected-categories]
+  (let [idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i))) notes)
+        categories-to-idx (n/index-categories selected-categories
+                                              (+ 1 (count idxed-notes)))
+        category-to-node (fn [c] {:name c
+                                  :idx (get categories-to-idx c)
+                                  ; hack for group coloring
+                                  :children [1 1]})]
+    {:nodes (update-nodes (concat 
+                            [{:name "home" :idx 0 :children [1 1 1]}]
+                            idxed-notes
+                            (map category-to-node selected-categories))
+                          prettify-name fix-path strip-extension scale-size
+                          assign-group)
+     :links (concat ; TODO make only links from organize-notes-by-category
+                    ; appear if the number of links is overwhelming
+                    (get-category-links idxed-notes categories-to-idx)
+                    ; All categories link to home
+                    ; TODO make only categories from organize-notes-by-category
+                    ; appear here
+                    (for [[_ i] categories-to-idx]
+                      {:source 0
+                       :target i
+                       :value 6}))}))
+
 (defn ^:export page-graph-from-notes
-  [notes]
-  (let [category-selections (n/get-category-selections notes)
-        idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i))) notes)]
-    (fn []
-      (let [selected-categories (get-selected-vars @category-selections)]
-        [page-graph (n/notes-by-category-to-children-tree
-                      (n/organize-notes-by-category
-                        idxed-notes selected-categories)
-                      (n/index-categories selected-categories
-                                          (count idxed-notes)))]))))
+  ([notes]
+   (page-graph-from-notes notes #js {}))
+  ([notes options]
+   (let [category-selections (n/get-category-selections notes)]
+     (fn []
+       (let [page-graph-data
+             (r/atom (notes-to-graph notes
+                                     (get-selected-vars @category-selections)))]
+         (prn @page-graph-data)
+         [:div
+           [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
+            (js->clj options :keywordize-keys true)]])))))
                       

@@ -100,7 +100,7 @@
           notes))
 
 (defn notes-by-category-to-children-tree
-  "Converts a map produced by get-notes-by-category to a PageTree})]
+  "Converts a map produced by get-notes-by-category to a PageTree
   readable by page_graph.cljs logic."
   [notes-by-category categories-to-idx]
   (into []
