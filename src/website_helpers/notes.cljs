@@ -3,6 +3,7 @@
     [website-helpers.common-components :refer [dropdown-check-list]]
     [website-helpers.utils :refer [get-selected-vars get-url-param-selections]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
+    [website-helpers.all-data :as ad]
     [clojure.set :refer [union difference intersection]]
     [clojure.string :refer [capitalize replace replace-first]]
     [cljs.test :refer (deftest is)]
@@ -58,18 +59,21 @@
 (defn get-notes-by-largest-category
   ([notes] (get-notes-by-largest-category notes #{}))
   ([notes categories-to-ignore]
-   (if (<= (count notes) 1)
+   (if (or (nil? notes) (<= (count notes) 1))
      {:notes notes}
      (let [[largest-category largest-notes]
            (get-largest-category notes categories-to-ignore)
            other-notes (difference notes largest-notes)]
-       (merge
-         {largest-category (get-notes-by-largest-category
-                             largest-notes (conj categories-to-ignore
-                                                 largest-category))}
-         (get-notes-by-largest-category other-notes categories-to-ignore))))))
+       ; I don't really understand why this if works
+       (if (nil? largest-notes)
+         {:notes notes}
+         (merge
+           {largest-category (get-notes-by-largest-category
+                               largest-notes (conj categories-to-ignore
+                                                   largest-category))}
+           (get-notes-by-largest-category other-notes categories-to-ignore)))))))
 
-; (get-notes-by-largest-category (set example-notes))
+(get-notes-by-largest-category (set ad/notes))
 
 
 (defn note-to-li
@@ -150,6 +154,10 @@
 (defn make-category-menu
   [notes selected-categories]
   (make-subtree (organize-notes-by-category notes selected-categories)))
+
+; (organize-notes-by-category
+;   ad/notes 
+;   (get-selected-vars {"..." false, "Social" false, "Datavis" false, "Exercise" false, "Visual Art" false, "Housing" false, "Climbing" false, "Mind" false, "Hydroponics" false, "Competitive" false, "⭐top10" false, "Morality" false, "Solitary" false, "Consuming Content" false, "Software Dev" false, "Cat1" false, "Mechanic Ideas" false, "Health And Longevity" false, "Lifelogging" false, "Thought Experiments" false, "Philosophy" false, "Gamedev" false, "Movie" false, "Real Time" false, "Event Reports" false, "Investing And Finances" false, "Gaming" false, "Multiplayer" false, "Turn Based" false, "Game" false, "Habit" false, "Puzzle" false, "Understanding The World" false, "Story" false, "Programming" false, "Experiences" false, "Lifestyle" false, "Game Ideas" false, "Cat2" false, "Lifestyle Optimizations" false}))
 
 (defn get-category-selections
   [notes]

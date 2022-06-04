@@ -96,10 +96,10 @@
   (let [viz-state (atom (merge {:width 2000
                                 :height 1500
                                 :link-strength 0.08
-                                :charge-strength -100
+                                :charge-strength -50
                                 :center-x 1000
                                 :center-y 750
-                                :collide-size 50
+                                :collide-size 30
                                 ; The initial "temperature" of the simulation.
                                 :initial-alpha 4
                                 :hover-text-sel nil
@@ -118,14 +118,15 @@
                              (.append "ellipse")
                              {:stroke         "#fff"
                               :stroke-width   1.5
-                              :rx             #(* 5 (count (.-name %)))
-                              :ry             #(max 25 (.-size %))
+                              :rx             #(* 3 (count (.-name %)))
+                              :ry             #(/ (max 25 (.-size %)) 2)
                               :fill           #(color (.-group %))
                               :fill-opacity   0.7}))
         add-text (fn [sel]
                    (rid3-> sel
                            (.append "text")
                            {:text-anchor "middle"
+                            :font-size "x-small"
                             :y 5}
                            (.text #(.-name %))))]
     (fn [ratom]
@@ -154,7 +155,8 @@
                             {:stroke         "#999"
                              :stroke-opacity 0.6
                              :stroke-width   #(-> (.-value %)
-                                                  js/Math.sqrt)}))}
+                                                  js/Math.sqrt
+                                                  (/ 2))}))}
                  {:kind            :elem-with-data
                   :class           "nodes"
                   :tag             "g"

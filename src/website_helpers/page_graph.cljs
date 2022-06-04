@@ -126,7 +126,7 @@
       (into [] (for [child (:children subtree)]
                  {:source (:idx child)
                   :target (:idx subtree)
-                  :value 6})))))
+                  :value 3})))))
 
 (defn get-category-links
   [nodes categories-to-idx]
@@ -135,7 +135,7 @@
             (into [] (for [category (:categories node)]
                        {:source (:idx node)
                         :target (get categories-to-idx category)
-                        :value 6})))))
+                        :value 3})))))
 
 (defn update-nodes
   [nodes & update-fns]
@@ -157,9 +157,11 @@
 
 (defn strip-extension
   [node]
-  (-> node
-      (update :name #(first (split % #"\.")))
-      (update :tree-path #(first (split % #"\.")))))
+  (if (= "." (last (:name node)))
+    node
+    (-> node
+        (update :name #(first (split % #"\.")))
+        (update :tree-path #(first (split % #"\."))))))
 
 (defn fix-path
   [node]
@@ -229,6 +231,7 @@
                                               (+ 1 (count idxed-notes)))
         category-to-node (fn [c] {:name c
                                   :idx (get categories-to-idx c)
+                                  :tree-path ""
                                   ; hack for group coloring
                                   :children [1 1]})]
     {:nodes (update-nodes (concat 
@@ -246,7 +249,7 @@
                     (for [[_ i] categories-to-idx]
                       {:source 0
                        :target i
-                       :value 6}))}))
+                       :value 3}))}))
 
 (defn ^:export page-graph-from-notes
   ([notes]
