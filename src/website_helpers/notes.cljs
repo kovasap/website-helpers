@@ -5,6 +5,7 @@
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
     [clojure.set :refer [union difference intersection]]
     [clojure.string :refer [capitalize replace replace-first]]
+    [cljs.test :refer (deftest is)]
     [reagent.core :as r]))
 
 (def Note
@@ -96,8 +97,9 @@
 
 (defn get-notes-for-categories
   [notes selected-categories]
-  (filter #(not (empty? (intersection selected-categories (:categories %))))
-          notes))
+  (set (filter #(not (empty? (intersection selected-categories
+                                           (:categories %))))
+               notes)))
 
 (defn notes-by-category-to-children-tree
   "Converts a map produced by get-notes-by-category to a PageTree
@@ -115,8 +117,8 @@
 
 (defn organize-notes-by-category
   [notes selected-categories]
-  ; (get-notes-by-largest-category ; Change this for different organization!
-  (get-notes-by-category ; Change this for different organization!
+  (get-notes-by-largest-category ; Change this for different organization!
+  ; (get-notes-by-category ; Change this for different organization!
     (get-notes-for-categories notes selected-categories)))
 
 (defn index-categories
@@ -124,10 +126,26 @@
   (into {} (for [[i c] (map-indexed vector categories)]
              [c (+ num-notes i)])))
 
-(let [categories #{"a 1" "c"}]
-  (notes-by-category-to-children-tree
-    (organize-notes-by-category example-notes categories)
-    (index-categories categories (count example-notes))))
+
+(deftest to-tree
+  (def example-categories #{"a 1" "c"})
+  (is (= (notes-by-category-to-children-tree
+          (organize-notes-by-category example-notes example-categories)
+          (index-categories example-categories (count example-notes)))
+         [{:name "a 1", :idx 5,
+           :children
+           [{:name "c", :idx 4,
+             :children
+             [{:name "4", :markdown "text 4", :path "content/docs/4.md",
+               :title "t-4", :categories #{"c" "a 1"}}]}
+            {:name "b", :idx nil,
+             :children
+             [{:name "1", :markdown "text 1", :path "content/docs/1.md",
+               :title "t-1", :categories #{"b" "a 1"}}]}
+            {:name "2", :markdown "text 2", :path "content/docs/2.md",
+             :title "t-2", :categories #{"a 1"}}]}
+          {:name "3", :markdown "text 3", :path "content/docs/3.md",
+           :title "t-3", :categories #{"c"}}])))
 
 (defn make-category-menu
   [notes selected-categories]

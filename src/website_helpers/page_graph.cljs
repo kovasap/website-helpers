@@ -257,7 +257,6 @@
        (let [page-graph-data
              (r/atom (notes-to-graph notes
                                      (get-selected-vars @category-selections)))]
-         (prn @page-graph-data)
          [:div
            [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
             (js->clj options :keywordize-keys true)]])))))
