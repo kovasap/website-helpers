@@ -6,8 +6,7 @@
   (:require
    [sablono.core :as sab]
    [sablono.server :as server]
-   [goog.string :as gstring]
-   [goog.string.format]
+   [clojure.string :refer [replace]]
    [rid3.core :as rid3 :refer [rid3->]]))
 
 
@@ -172,7 +171,10 @@
                                (rid3-> sel
                                  (.on "dblclick"
                                       (fn [_event node]
-                                        (js/window.open (str base-link (.-path node)))))
+                                        (js/window.open
+                                          (str base-link
+                                               (replace (.-path node)
+                                                        #" " "+")))))
                                  (.call drag)))}]}])))
 
 (defn prechew

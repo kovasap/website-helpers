@@ -157,10 +157,14 @@
 
 (defn strip-extension
   [node]
+  (prn (:path node))
+  (prn node)
   (if (= "." (last (:name node)))
     node
     (-> node
         (update :name #(first (split % #"\.")))
+        (update :path #(replace (first (split % #"\."))
+                                #"content/" ""))
         (update :tree-path #(first (split % #"\."))))))
 
 (defn fix-path
@@ -231,6 +235,7 @@
                                               (+ 1 (count idxed-notes)))
         category-to-node (fn [c] {:name c
                                   :idx (get categories-to-idx c)
+                                  :path (str "?" c "=true")
                                   :tree-path ""
                                   ; hack for group coloring
                                   :children [1 1]})]
