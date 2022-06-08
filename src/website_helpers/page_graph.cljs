@@ -132,9 +132,11 @@
   [nodes categories-to-idx]
   (reduce concat
           (for [node nodes]
-            (into [] (for [category (:categories node)]
+            (into [] (for [category (:categories node)
+                           :let [idx (get categories-to-idx category)]
+                           :when idx]
                        {:source (:idx node)
-                        :target (get categories-to-idx category)
+                        :target idx
                         :value 3})))))
 
 (defn update-nodes
@@ -157,8 +159,6 @@
 
 (defn strip-extension
   [node]
-  (prn (:path node))
-  (prn node)
   (if (= "." (last (:name node)))
     node
     (-> node
@@ -230,9 +230,12 @@
 
 (defn notes-to-graph
   [notes selected-categories]
-  (let [idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i))) notes)
-        categories-to-idx (n/index-categories selected-categories
-                                              (+ 1 (count idxed-notes)))
+  (let [idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i)))
+                                 (n/get-notes-for-categories
+                                   notes selected-categories))
+        categories-to-idx (assoc (n/index-categories selected-categories
+                                                     (+ 1 (count idxed-notes)))
+                                 "Home" 0)
         category-to-node (fn [c] {:name c
                                   :idx (get categories-to-idx c)
                                   :path (str "?" c "=true")

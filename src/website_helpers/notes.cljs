@@ -179,6 +179,8 @@
   [notes]
   (let [category-selections (get-category-selections notes)]
     (fn []
+      (prn "categories")
+      (prn @category-selections)
       [:div
         [:div [dropdown-check-list category-selections "Select Categories"]] 
         (make-category-menu
