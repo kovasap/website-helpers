@@ -4,6 +4,7 @@
     [website-helpers.utils :refer [get-selected-vars get-url-param-selections]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
     [website-helpers.all-data :as ad]
+    [website-helpers.global :refer [url-params]]
     [clojure.set :refer [union difference intersection]]
     [clojure.string :refer [capitalize replace replace-first]]
     [cljs.test :refer (deftest is)]
@@ -43,7 +44,7 @@
 
 
 (defn get-largest-category
-  ([notes] (get-largest-category #{}))
+  ([notes] (get-largest-category notes #{}))
   ([notes categories-to-ignore]
    (first
      (reverse
@@ -159,10 +160,10 @@
 ;   ad/notes 
 ;   (get-selected-vars {"..." false, "Social" false, "Datavis" false, "Exercise" false, "Visual Art" false, "Housing" false, "Climbing" false, "Mind" false, "Hydroponics" false, "Competitive" false, "⭐top10" false, "Morality" false, "Solitary" false, "Consuming Content" false, "Software Dev" false, "Cat1" false, "Mechanic Ideas" false, "Health And Longevity" false, "Lifelogging" false, "Thought Experiments" false, "Philosophy" false, "Gamedev" false, "Movie" false, "Real Time" false, "Event Reports" false, "Investing And Finances" false, "Gaming" false, "Multiplayer" false, "Turn Based" false, "Game" false, "Habit" false, "Puzzle" false, "Understanding The World" false, "Story" false, "Programming" false, "Experiences" false, "Lifestyle" false, "Game Ideas" false, "Cat2" false, "Lifestyle Optimizations" false}))
 
-(defn get-category-selections
+(defn filter-category-selections
   [notes]
-  (r/atom (get-url-param-selections
-            (set (keys (get-notes-by-category notes))))))
+  (into {} (for [category (keys (get-notes-by-category notes))]
+              [category (contains? @url-params category)])))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.")
@@ -177,9 +178,8 @@
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   [notes]
-  (let [category-selections (get-category-selections notes)]
-    (fn []
-      [:div
-        [:div [dropdown-check-list category-selections "Select Categories"]] 
-        (make-category-menu
-          notes (get-selected-vars @category-selections))])))
+  (fn []
+    [:div
+      [:div [dropdown-check-list url-params "Select Categories"]] 
+      (make-category-menu
+        notes (get-selected-vars (filter-category-selections notes)))]))

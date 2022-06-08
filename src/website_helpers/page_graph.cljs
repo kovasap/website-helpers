@@ -265,12 +265,12 @@
   ([notes]
    (page-graph-from-notes notes #js {}))
   ([notes options]
-   (let [category-selections (n/get-category-selections notes)]
-     (fn []
-       (let [page-graph-data
-             (r/atom (notes-to-graph notes
-                                     (get-selected-vars @category-selections)))]
-         [:div
-           [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
-            (js->clj options :keywordize-keys true)]])))))
+   (fn []
+     (let [page-graph-data
+           (r/atom (notes-to-graph
+                     notes (get-selected-vars
+                             (n/filter-category-selections notes))))]
+       [:div
+         [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
+          (js->clj options :keywordize-keys true)]]))))
                       
