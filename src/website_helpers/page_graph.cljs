@@ -259,6 +259,8 @@
                        :target i
                        :value 3}))}))
 
+; TODO make this component update when the url parameters change (e.g. from
+; make-index-menu).
 (defn ^:export page-graph-from-notes
   ([notes]
    (page-graph-from-notes notes #js {}))
