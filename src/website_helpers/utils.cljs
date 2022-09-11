@@ -36,8 +36,7 @@
 
 (defn get-url-param-selections
   {:malli/schema [:=> [:cat [:set :string]] [:map-of :string :boolean]]}
-  ([] (get-url-param-selections #{}))
-  ([vars]
-   (let [url-params (parse-params)]
-     (into {} (for [var vars]
-                 [var (contains? url-params var)])))))
+  [vars]
+  (let [url-params (parse-params)]
+    (into {} (for [var vars]
+                [var (contains? url-params var)]))))

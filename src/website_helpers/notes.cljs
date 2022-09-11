@@ -77,27 +77,41 @@
 (get-notes-by-largest-category (set ad/notes))
 
 
+(defn path->url
+  [path]
+  (-> path
+      (replace-first "content" "")
+      (replace #".md" "/")))
+
+
 (defn note-to-li
   [note]
   [:li {:key (:name note)}
-   [:a {:href (-> note
-                  :path
-                  (replace-first "content" "")
-                  (replace #".md" "/"))}
+   [:a {:href (path->url (:path note))}
     (:title note)]])
+
+
+(defn get-cur-page-note
+  [possible-notes]
+  (let [url (.. js/window -location -pathname)]
+    (first (filter #(= (path->url (:path %)) url) possible-notes))))
 
    
 (defn make-subtree
-  [notes-by-category]
-  (into [:ul] (reduce concat
-                      (for [[category subtree] notes-by-category]
-                        (if (= category :notes)
-                          (into [] (for [note subtree]
-                                     (note-to-li note)))
-                          [[:li {:key category}
-                            [:details {:id category}
-                             [:summary [:strong (capitalize category)]]
-                             (make-subtree subtree)]]])))))
+  [notes-by-category all-notes]
+  (into [:ul]
+        (reduce concat
+          (for [[category subtree] notes-by-category]
+            (if (= category :notes)
+              (into [] (for [note subtree] (note-to-li note)))
+              [[:li {:key category}
+                [:details {:id   category
+                           ; Expand all menus for the current page.
+                           :open (contains? (:categories (get-cur-page-note
+                                                           all-notes))
+                                            (doto category prn))}
+                 [:summary [:strong (capitalize category)]]
+                 (make-subtree subtree all-notes)]]])))))
 
 
 (defn get-notes-for-categories
@@ -107,7 +121,7 @@
                notes)))
 
 (defn notes-by-category-to-children-tree
-  "Converts a map produced by get-notes-by-category to a PageTree
+  "Converts a map produced by get-notes-by-category to a PageTree])
   readable by page_graph.cljs logic."
   [notes-by-category categories-to-idx]
   (into []
@@ -154,7 +168,8 @@
 
 (defn make-category-menu
   [notes selected-categories]
-  (make-subtree (organize-notes-by-category notes selected-categories)))
+  (make-subtree (organize-notes-by-category notes selected-categories)
+                notes))
 
 ; (organize-notes-by-category
 ;   ad/notes 

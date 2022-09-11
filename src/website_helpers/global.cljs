@@ -4,4 +4,4 @@
     [reagent.core :as r]))
 
 (def url-params
-   (r/atom (get-url-param-selections))) 
+   (r/atom (get-url-param-selections #{}))) 
