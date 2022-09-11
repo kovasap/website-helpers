@@ -47,6 +47,7 @@
     [:div
       [:p "hi"]
       [page-graph-from-notes notes]
+      [n/random-page notes]
       [n/make-index-menu notes]
       [make-aggregated-items example-experiences]]))
 

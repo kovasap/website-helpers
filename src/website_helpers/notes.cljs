@@ -6,7 +6,7 @@
     [website-helpers.all-data :as ad]
     [website-helpers.global :refer [url-params]]
     [clojure.set :refer [union difference intersection]]
-    [clojure.string :refer [capitalize replace replace-first]]
+    [clojure.string :refer [capitalize replace replace-first join]]
     [cljs.test :refer (deftest is)]
     [reagent.core :as r]))
 
@@ -84,20 +84,24 @@
       (replace #".md" "/")))
 
 
+(defn note->link
+  [note cur-page-note]
+  [:a
+   (let [attrs {:href (path->url (:path note))}]
+     (if (= cur-page-note note)
+       (assoc attrs :style {:font-style "italic"})
+       attrs))
+   (:title note)])
+
 (defn note-to-li
   [note cur-page-note]
   [:li {:key (:name note)}
-   [:a (let [attrs {:href (path->url (:path note))}]
-         (if (= cur-page-note note)
-          (assoc attrs :style {:font-style "italic"})
-          attrs))
-    (:title note)]])
+   (note->link note cur-page-note)])
 
 
 (defn get-cur-page-note
   [possible-notes]
-  (let [url (.. js/window -location -pathname)
-        url "/docs/gamedev/mechanic-ideas/low-friction-turn-based-tactics/"]
+  (let [url (.. js/window -location -pathname)]
     (first (filter #(= (path->url (:path %)) url) possible-notes))))
 
    
@@ -200,3 +204,14 @@
       [:div [dropdown-check-list url-params "Select Categories"]] 
       (make-category-menu
         notes (get-selected-vars (filter-category-selections notes)))]))
+
+
+
+(defn ^:export random-page
+  [notes]
+  (fn []
+    (let [note (rand-nth notes)]
+      (prn note)
+      [:p "Random Page: " (note->link note nil)
+       [:span {:style {:font-size "70%"}}
+        " (" (join ", " (:categories note)) ")"]])))
