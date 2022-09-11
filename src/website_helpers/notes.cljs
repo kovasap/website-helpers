@@ -85,33 +85,35 @@
 
 
 (defn note-to-li
-  [note]
+  [note cur-page-note]
   [:li {:key (:name note)}
-   [:a {:href (path->url (:path note))}
+   [:a (let [attrs {:href (path->url (:path note))}]
+         (if (= cur-page-note note)
+          (assoc attrs :style {:font-style "italic"})
+          attrs))
     (:title note)]])
 
 
 (defn get-cur-page-note
   [possible-notes]
-  (let [url (.. js/window -location -pathname)]
+  (let [url (.. js/window -location -pathname)
+        url "/docs/gamedev/mechanic-ideas/low-friction-turn-based-tactics/"]
     (first (filter #(= (path->url (:path %)) url) possible-notes))))
 
    
 (defn make-subtree
-  [notes-by-category all-notes]
+  [notes-by-category cur-page]
   (into [:ul]
         (reduce concat
           (for [[category subtree] notes-by-category]
             (if (= category :notes)
-              (into [] (for [note subtree] (note-to-li note)))
+              (into [] (for [note subtree] (note-to-li note cur-page)))
               [[:li {:key category}
                 [:details {:id   category
                            ; Expand all menus for the current page.
-                           :open (contains? (:categories (get-cur-page-note
-                                                           all-notes))
-                                            (doto category prn))}
+                           :open (contains? (:categories cur-page) category)}
                  [:summary [:strong (capitalize category)]]
-                 (make-subtree subtree all-notes)]]])))))
+                 (make-subtree subtree cur-page)]]])))))
 
 
 (defn get-notes-for-categories
@@ -121,7 +123,7 @@
                notes)))
 
 (defn notes-by-category-to-children-tree
-  "Converts a map produced by get-notes-by-category to a PageTree])
+  "Converts a map produced by get-notes-by-category to a PageTree)
   readable by page_graph.cljs logic."
   [notes-by-category categories-to-idx]
   (into []
@@ -169,7 +171,7 @@
 (defn make-category-menu
   [notes selected-categories]
   (make-subtree (organize-notes-by-category notes selected-categories)
-                notes))
+                (get-cur-page-note notes)))
 
 ; (organize-notes-by-category
 ;   ad/notes 
