@@ -6,7 +6,7 @@
 
 ```
 npm install
-clj -A:shadow-cljs watch app test
+clj -A:shadow-cljs watch website_helpers
 ```
 
 ### Building for production
