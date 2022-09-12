@@ -1,7 +1,7 @@
 (ns website-helpers.utils
   (:require
     [markdown-to-hiccup.core :refer [md->hiccup component]]
-    [clojure.string :refer [split includes?]]))
+    [clojure.string :refer [split includes? replace]]))
 
 (defn get-selected-vars
   "If no vars are selected, all are!"
@@ -31,7 +31,8 @@
   (let [url (.-location js/window)
         param-strs (-> url (split #"\?") last (split #"\&"))]
     (if (includes? (str url) "?")
-      (into {} (map #(split % #"=") param-strs))
+      (into {} (for [[k v] (map #(split % #"=") param-strs)]
+                 [(replace k #"\+" " ") v]))
       {})))
 
 (defn get-url-param-selections
