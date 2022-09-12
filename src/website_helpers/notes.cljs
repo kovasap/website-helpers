@@ -199,12 +199,15 @@
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   [notes]
-  (fn []
-    [:div
-      [:div [dropdown-check-list url-params "Select Categories"]] 
-      (make-category-menu
-        notes (get-selected-vars (filter-category-selections notes)))]))
-
+  (let [category-selections (r/atom (get-url-param-selections
+                                      (set (keys (filter-category-selections
+                                                   notes)))
+                                      url-params))]
+    (fn [] [:div
+            [:div
+             [dropdown-check-list category-selections "Select Categories"]]
+            (make-category-menu notes
+                                (get-selected-vars @category-selections))])))
 
 
 (defn ^:export random-page

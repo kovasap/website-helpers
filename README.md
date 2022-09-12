@@ -9,6 +9,8 @@ npm install
 clj -A:shadow-cljs watch website_helpers
 ```
 
+Add `/index.html` to the url to open the test page.
+
 ### Building for production
 
 ```

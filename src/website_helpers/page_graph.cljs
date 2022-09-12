@@ -2,7 +2,8 @@
   (:require
     [website-helpers.graph :as g]
     [website-helpers.notes :as n]
-    [website-helpers.utils :refer [get-selected-vars]]
+    [website-helpers.global :refer [url-params]]
+    [website-helpers.utils :refer [get-selected-vars get-url-param-selections]]
     [clojure.string :refer [split replace join capitalize]]
     [reagent.core :as r]))
 
@@ -262,15 +263,20 @@
 ; TODO make this component update when the url parameters change (e.g. from
 ; make-index-menu).
 (defn ^:export page-graph-from-notes
-  ([notes]
-   (page-graph-from-notes notes #js {}))
+  ([notes] (page-graph-from-notes notes #js {}))
   ([notes options]
    (fn []
-     (let [page-graph-data
-           (r/atom (notes-to-graph
-                     notes (get-selected-vars
-                             (n/filter-category-selections notes))))]
+     (let [page-graph-data (r/atom
+                             (notes-to-graph
+                               notes
+                               (get-selected-vars
+                                 (get-url-param-selections
+                                   (set (keys (n/filter-category-selections
+                                                notes)))
+                                   url-params))))]
        [:div
-         [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
-          (js->clj options :keywordize-keys true)]]))))
+        [g/viz
+         (r/track g/prechew page-graph-data)
+         "https://kovasap.github.io/"
+         (js->clj options :keywordize-keys true)]]))))
                       

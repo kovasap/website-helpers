@@ -4,6 +4,7 @@
     [website-helpers.utils :refer [get-url-param-selections get-selected-vars
                                    my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
+    [website-helpers.global :refer [url-params]]
     [clojure.set :refer [union intersection subset?]]
     [clojure.string :refer [split replace join includes? capitalize]]
     [clojure.walk :refer [postwalk]]
@@ -620,7 +621,8 @@ advantage."
   [data-name other-name data-map]
   (let [tag-selections (r/atom (get-url-param-selections
                                  (set (reduce union
-                                              (map :tags (vals data-map))))))]
+                                              (map :tags (vals data-map))))
+                                 url-params))]
     (fn [data-name other-name data-map]
       ; This extra into is necessary since we are dereferencing @tag-selections
       ; See https://github.com/reagent-project/reagent/issues/18

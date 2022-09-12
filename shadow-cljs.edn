@@ -13,4 +13,5 @@
 
  :dev-http {8021 "out/test"
             3000 {:root    "public"
+                  :push-state/index "index.html"
                   :handler user/website-helper}}}
