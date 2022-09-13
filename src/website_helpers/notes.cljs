@@ -109,7 +109,9 @@
   [notes-by-category cur-page]
   (into [:ul]
         (reduce concat
-          (for [[category subtree] notes-by-category]
+          (for [[category subtree] (sort-by #(let [k (first %)]
+                                               (if (string? k) k (name k)))
+                                            notes-by-category)]
             (if (= category :notes)
               (into [] (for [note subtree] (note-to-li note cur-page)))
               [[:li {:key category}
