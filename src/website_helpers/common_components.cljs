@@ -23,6 +23,8 @@
     (fn []
       [:div {:id "tag-list"
              :class ["dropdown-check-list" (if @opened "visible" nil)]
+             :style {:overflow "auto"
+                     :max-height "200px"}
              :tabIndex "100"}
        [:span {:class "anchor" :on-click #(reset! opened (not @opened))}
         title]

@@ -5,7 +5,7 @@
     [website-helpers.page-graph :refer [page-graph-from-notes]]
     [website-helpers.notes :as n]
     [website-helpers.all-data :refer [notes]]
-    [website-helpers.utils :refer [get-selected-vars my-md->hiccup]]
+    [website-helpers.utils :refer [my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
     [cljs.reader]
     [clojure.string :refer [split replace join includes? capitalize]]

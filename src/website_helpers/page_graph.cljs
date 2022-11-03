@@ -3,7 +3,7 @@
     [website-helpers.graph :as g]
     [website-helpers.notes :as n]
     [website-helpers.global :refer [url-params]]
-    [website-helpers.utils :refer [get-selected-vars get-url-param-selections]]
+    [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
     [clojure.string :refer [split replace join capitalize]]
     [reagent.core :as r]))
 
@@ -230,11 +230,14 @@
 
 
 (defn notes-to-graph
-  [notes selected-categories]
-  (let [idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i)))
+  [notes selected-categories all-categories]
+  (let [categories-to-show (if (= 0 (count selected-categories))
+                              (set (keys all-categories))
+                              selected-categories)
+        idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i)))
                                  (n/get-notes-for-categories
                                    notes selected-categories))
-        categories-to-idx (assoc (n/index-categories selected-categories
+        categories-to-idx (assoc (n/index-categories categories-to-show
                                                      (+ 1 (count idxed-notes)))
                                  "Home" 0)
         category-to-node (fn [c] {:name c
@@ -246,7 +249,7 @@
     {:nodes (update-nodes (concat 
                             [{:name "home" :idx 0 :children [1 1 1]}]
                             idxed-notes
-                            (map category-to-node selected-categories))
+                            (map category-to-node categories-to-show))
                           prettify-name fix-path strip-extension scale-size
                           assign-group)
      :links (concat ; TODO make only links from organize-notes-by-category
@@ -266,14 +269,13 @@
   ([notes] (page-graph-from-notes notes #js {}))
   ([notes options]
    (fn []
-     (let [page-graph-data (r/atom
-                             (notes-to-graph
-                               notes
-                               (get-selected-vars
-                                 (get-url-param-selections
-                                   (set (keys (n/filter-category-selections
-                                                notes)))
-                                   url-params))))]
+     (let [all-categories  (get-url-param-selections
+                             (set (keys (n/filter-category-selections notes)))
+                             url-params)
+           page-graph-data (r/atom
+                             (notes-to-graph notes
+                                             (get-selected-vars all-categories)
+                                             all-categories))]
        [:div
         [g/viz
          (r/track g/prechew page-graph-data)

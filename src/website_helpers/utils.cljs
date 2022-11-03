@@ -4,15 +4,12 @@
     [clojure.string :refer [split includes? replace]]))
 
 (defn get-selected-vars
-  "If no vars are selected, all are!"
   {:malli/schema [:=> [:cat [:map-of :string :boolean]]
                   [:set :string]]}
   [selections]
-  (if (every? #(not %) (vals selections))
-    (set (keys selections))
-    (set (for [[var selected] selections
-               :when selected]
-           var))))
+  (set (for [[var selected] selections
+             :when selected]
+         var)))
 
 (defn my-md->hiccup
   [string]

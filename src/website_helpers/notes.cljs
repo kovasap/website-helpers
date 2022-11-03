@@ -1,11 +1,11 @@
 (ns website-helpers.notes
   (:require
     [website-helpers.common-components :refer [dropdown-check-list]]
-    [website-helpers.utils :refer [get-selected-vars get-url-param-selections]]
+    [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
     [website-helpers.all-data :as ad]
     [website-helpers.global :refer [url-params]]
-    [clojure.set :refer [union difference intersection]]
+    [clojure.set :refer [union difference intersection subset?]]
     [clojure.string :refer [capitalize replace replace-first join]]
     [cljs.test :refer (deftest is)]
     [reagent.core :as r]))
@@ -116,17 +116,30 @@
               (into [] (for [note subtree] (note-to-li note cur-page)))
               [[:li {:key category}
                 [:details {:id   category
-                           ; Expand all menus for the current page.
-                           :open (contains? (:categories cur-page) category)}
+                           :open (or
+                                   ; Expand all menus for the current page.
+                                   (contains? (:categories cur-page) category)
+                                   ; Expand all menus if there are few enough
+                                   ; items
+                                   (> 5
+                                      (count (reduce concat
+                                               (vals notes-by-category)))))}
                  [:summary [:strong (capitalize category)]]
                  (make-subtree subtree cur-page)]]])))))
 
 
+(defn overlap?
+  [set1 set2]
+  (not (empty? (intersection set1 set2))))
+
+
 (defn get-notes-for-categories
   [notes selected-categories]
-  (set (filter #(not (empty? (intersection selected-categories
-                                           (:categories %))))
-               notes)))
+  (if (= 0 (count selected-categories))
+    (set notes)
+    (set (filter ; #(overlap? selected-categories (:categories %))
+           #(subset? selected-categories (:categories %))
+           notes))))
 
 (defn notes-by-category-to-children-tree
   "Converts a map produced by get-notes-by-category to a PageTree)
@@ -181,7 +194,7 @@
 
 ; (organize-notes-by-category
 ;   ad/notes 
-;   (get-selected-vars {"..." false, "Social" false, "Datavis" false, "Exercise" false, "Visual Art" false, "Housing" false, "Climbing" false, "Mind" false, "Hydroponics" false, "Competitive" false, "⭐top10" false, "Morality" false, "Solitary" false, "Consuming Content" false, "Software Dev" false, "Cat1" false, "Mechanic Ideas" false, "Health And Longevity" false, "Lifelogging" false, "Thought Experiments" false, "Philosophy" false, "Gamedev" false, "Movie" false, "Real Time" false, "Event Reports" false, "Investing And Finances" false, "Gaming" false, "Multiplayer" false, "Turn Based" false, "Game" false, "Habit" false, "Puzzle" false, "Understanding The World" false, "Story" false, "Programming" false, "Experiences" false, "Lifestyle" false, "Game Ideas" false, "Cat2" false, "Lifestyle Optimizations" false}))
+;   (get-selected-vars {"..." false, "Social" false, "Lifestyle Optimizations" false}))
 
 (defn filter-category-selections
   [notes]
@@ -201,10 +214,10 @@
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   [notes]
-  (let [category-selections (r/atom (get-url-param-selections
-                                      (set (keys (filter-category-selections
-                                                   notes)))
-                                      url-params))]
+  (let [category-selections (r/atom
+                              (get-url-param-selections
+                                (set (keys (filter-category-selections notes)))
+                                url-params))]
     (fn [] [:div
             [:div
              [dropdown-check-list category-selections "Select Categories"]]
@@ -216,7 +229,6 @@
   [notes]
   (fn []
     (let [note (rand-nth notes)]
-      (prn note)
       [:p "Random Page: " (note->link note nil)
        [:span {:style {:font-size "70%"}}
         " (" (join ", " (:categories note)) ")"]])))
