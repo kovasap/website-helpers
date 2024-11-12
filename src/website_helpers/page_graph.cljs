@@ -154,6 +154,10 @@
 (defn assign-group
   [node]
   (assoc node :group (cond
+                       ; This is a special case we are overloading the "group"
+                       ; concept for, since i couldn't figure out how to get a
+                       ; new field through the clj->js conversion.
+                       (contains? (:categories node) "Recent") 4
                        (nil? (:children node)) 1
                        (= 0 (count (:children node))) 2
                        (<= 0 (count (:children node))) 3)))

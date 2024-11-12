@@ -5,7 +5,7 @@
     :title "Favorite Music"
     :markdown "# My Favorite Albums\n\n## Flow/Immersive\n\n- [hubris.](https://hubrisband.bandcamp.com/)\n- [jakob](https://jakob.bandcamp.com/)\n- [God is an Astronaut](https://www.youtube.com/watch?v=yhXHH2sZlQU)\n- [Night\n   Verses](https://nightverses.bandcamp.com/album/from-the-gallery-of-sleep)\n- [Intervals](https://intervalsmusic.bandcamp.com/album/the-way-forward)\n- [65daysofstatic](https://birdsrobe.bandcamp.com/album/wild-light)\n- [Unprocessed](https://unprocessed.bandcamp.com/album/covenant)\n\n## Pump\n\n- [Russian Circles](https://russiancircles.bandcamp.com/)\n- [Zeal and Ardor](https://zealandardor.bandcamp.com/)\n\n## Catchy\n\n- [Tender](https://tender.bandcamp.com/album/fear-of-falling-asleep)\n- [Metal Mother](https://metalmother.bandcamp.com/)\n- [Pair of Arrows](https://pairofarrows.bandcamp.com/)\n- Neon Trees\n\n## Chill/Background\n\n- Ratatat\n- [El Ten Eleven](https://fakerecordlabel.bandcamp.com/album/el-ten-eleven-album)\n- [Glitch Mob](https://theglitchmob.bandcamp.com/)\n- [Tim Hecker](https://timhecker.bandcamp.com/)\n- [Nick Johnston](https://www.youtube.com/watch?v=MfiNRE6IZJM)\n\n\n\nCategories: "
     :name "favorite-music.md"
-    :categories #{}
+    :categories #{"Recent"}
     :dir? false
     :links []
     :size 1102

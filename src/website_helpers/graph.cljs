@@ -117,15 +117,24 @@
                              (.append "ellipse")
                              {:stroke         "#fff"
                               :stroke-width   1.5
-                              :rx             #(* 3 (count (.-name %)))
-                              :ry             #(/ (max 25 (.-size %)) 2)
+                              :rx             #(* (if (= 1 (.-group %))
+                                                    3
+                                                    4.5)
+                                                  (count (.-name %)))
+                              :ry             #(/ (max 25 (.-size %)) 1.8)
                               :fill           #(color (.-group %))
                               :fill-opacity   0.7}))
         add-text (fn [sel]
                    (rid3-> sel
                            (.append "text")
                            {:text-anchor "middle"
-                            :font-size "x-small"
+                            :font-size #(cond
+                                          (= 3 (.-group %)) "small"
+                                          (= 4 (.-group %)) "small"
+                                          :else "x-small")
+                            :font-weight #(if (= 4 (.-group %))
+                                            "bold"
+                                            "normal")
                             :y 5}
                            (.text #(.-name %))))]
     (fn [ratom]
@@ -179,6 +188,8 @@
 
 (defn prechew
   [app-state]
+  (doall (for [node (:nodes @app-state)]
+           (prn (:name node) (:categories node))))
   (-> @app-state
       (update :nodes clj->js)
       (update :links clj->js)))
