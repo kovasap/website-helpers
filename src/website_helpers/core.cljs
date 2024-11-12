@@ -3,6 +3,9 @@
     [website-helpers.filterable-items :refer [make-aggregated-items
                                               example-experiences]]
     [website-helpers.page-graph :refer [page-graph-from-notes]]
+    ; note that we need to include everything here even if we aren't directly
+    ; using it so that cljs includes it in the final build
+    [website-helpers.graph]
     [website-helpers.notes :as n]
     [website-helpers.all-data :refer [notes]]
     [website-helpers.utils :refer [my-md->hiccup]]
