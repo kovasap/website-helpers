@@ -188,8 +188,8 @@
 
 (defn prechew
   [app-state]
-  (doall (for [node (:nodes @app-state)]
-           (prn (:name node) (:categories node))))
+  #_(doall (for [node (:nodes @app-state)]
+             (prn (:name node) (:categories node))))
   (-> @app-state
       (update :nodes clj->js)
       (update :links clj->js)))
