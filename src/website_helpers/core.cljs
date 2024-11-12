@@ -16,6 +16,8 @@
     [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
 
+(prn "Loaded website helpers!")
+
 (defn ^:export to-js
   "Useful for debugging when trying to call functions in this file from js."
   [thing]
