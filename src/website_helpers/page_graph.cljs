@@ -154,9 +154,13 @@
 (defn assign-group
   [node]
   (assoc node :group (cond
-                       (nil? (:children node)) 1
-                       (= 0 (count (:children node))) 2
-                       (<= 0 (count (:children node))) 3)))
+                       ; This is a special case we are overloading the "group"
+                       ; concept for, since i couldn't figure out how to get a
+                       ; new field through the clj->js conversion.
+                       (contains? (:categories node) "Recent") 3
+                       (or (nil? (:children node))
+                           (= 0 (count (:children node)))) 1
+                       (<= 0 (count (:children node))) 2)))
 
 (defn strip-extension
   [node]
@@ -184,7 +188,15 @@
   (update node :name #(-> %
                          (replace #"-" " ")
                          (capitalize-words))))
-                       
+
+(def legend
+  {:name "LEGEND" :size 5000 :group 4
+   :children [{:name "Category (double-click nodes to filter graph)"
+               :size 5000
+               :group 2
+               :children [{:name "Page (double-click nodes to view)"
+                           :group 3
+                           :size 5000}]}]})
 
 (defn page-tree-to-graph
   [page-tree]
@@ -222,36 +234,47 @@
   ([page-tree]
    (page-graph page-tree #js {}))
   ([page-tree options]
-   (let [page-graph-data (r/atom (page-tree-to-graph page-tree))]
+   (let [page-graph-data (r/atom (page-tree-to-graph (conj page-tree legend)))]
      (fn []
        [:div
          [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
-          (js->clj options :keywordize-keys true)]]))))
+          (js->clj options :keywordize-keys true)
+          page-graph-data]]))))
 
 
 (defn notes-to-graph
   [notes selected-categories all-categories]
-  (let [categories-to-show (if (= 0 (count selected-categories))
+  (let [starting-idx 4  ; leave room for HOME and LEGENDD
+        categories-to-show (if (= 0 (count selected-categories))
                               (set (keys all-categories))
                               selected-categories)
-        idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i)))
+        idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ starting-idx i)))
                                  (n/get-notes-for-categories
                                    notes selected-categories))
         categories-to-idx (assoc (n/index-categories categories-to-show
-                                                     (+ 1 (count idxed-notes)))
-                                 "Home" 0)
+                                                     (+ starting-idx
+                                                        (count idxed-notes)))
+                                 "HOME" 0)
         category-to-node (fn [c] {:name c
                                   :idx (get categories-to-idx c)
                                   :path (str "?" c "=true")
                                   :tree-path ""
                                   ; hack for group coloring
                                   :children [1 1]})]
-    {:nodes (update-nodes (concat 
-                            [{:name "home" :idx 0 :children [1 1 1]}]
-                            idxed-notes
-                            (map category-to-node categories-to-show))
+    {:nodes (concat
+              [{:name "HOME" :idx 0 :group 4 :size 20 :label "home"}
+               {:name "LEGEND" :idx 1 :group 4 :size 20 :label "legend"}
+               {:name "Category (double-click to filter graph)"
+                :idx 2 :group 2 :size 20 :label "legend"}
+               {:name "Page (double-click to view)" :idx 3 :group 1 :size 20
+                :label "legend"}]
+              (update-nodes (concat 
+                             idxed-notes
+                             (map category-to-node categories-to-show))
                           prettify-name fix-path strip-extension scale-size
-                          assign-group)
+                          assign-group
+                          #(assoc % :label (first (:categories %)))
+                          #(dissoc % :markdown)))
      :links (concat ; TODO make only links from organize-notes-by-category
                     ; appear if the number of links is overwhelming
                     (get-category-links idxed-notes categories-to-idx)
@@ -261,7 +284,11 @@
                     (for [[_ i] categories-to-idx]
                       {:source 0
                        :target i
-                       :value 3}))}))
+                       :value 3})
+                    ; setup LEGEND nodes
+                    [{:source 0 :target 1 :value 10}
+                     {:source 1 :target 2 :value 10}
+                     {:source 2 :target 3 :value 10}])}))
 
 ; TODO make this component update when the url parameters change (e.g. from
 ; make-index-menu).

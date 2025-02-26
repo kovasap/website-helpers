@@ -1,4 +1,6 @@
-# Template App
+# Webside Helpers
+
+Helper code for my website.
 
 ## Development Commands
 

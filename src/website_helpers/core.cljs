@@ -3,6 +3,9 @@
     [website-helpers.filterable-items :refer [make-aggregated-items
                                               example-experiences]]
     [website-helpers.page-graph :refer [page-graph-from-notes]]
+    ; note that we need to include everything here even if we aren't directly
+    ; using it so that cljs includes it in the final build
+    [website-helpers.graph]
     [website-helpers.notes :as n]
     [website-helpers.all-data :refer [notes]]
     [website-helpers.utils :refer [my-md->hiccup]]
@@ -15,6 +18,8 @@
     [reagent.core :as r]
     [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
+
+(prn "Loaded website helpers!")
 
 (defn ^:export to-js
   "Useful for debugging when trying to call functions in this file from js."

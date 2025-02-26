@@ -111,21 +111,33 @@
         ;; https://github.com/d3/d3-scale-chromatic/blob/main/README.md#api-reference
         ;; for options.
         ;; See https://stackoverflow.com/a/21208204 for custom schemes.
-        color (js/d3.scaleOrdinal ["#377eb8" "#4daf4a" "#984ea3" "#ff7f00"]) 
+        ;; Note that this returns colors IN THE ORDER IT IS CALLED, not based
+        ;; on the value it is called with (but it will return the same color
+        ;; for repeated values).  See https://observablehq.com/@d3/d3-scaleordinal.
+        group-color (js/d3.scaleOrdinal ["#ff7f00" "#377eb8" "#4daf4a" "#984ea3"]) 
+        category-color (js/d3.scaleOrdinal js/d3.schemeCategory10)
         add-circle (fn [sel]
                      (rid3-> sel
                              (.append "ellipse")
                              {:stroke         "#fff"
+                                              ;#(group-color (.-group %))
                               :stroke-width   1.5
-                              :rx             #(* 3 (count (.-name %)))
-                              :ry             #(/ (max 25 (.-size %)) 2)
-                              :fill           #(color (.-group %))
-                              :fill-opacity   0.7}))
+                              :rx             #(+ 15 (* 3 (count (.-name %))))
+                              :ry             #(/ (max 25 (.-size %)) 1.8)
+                              :fill           #(group-color (.-group %))
+                                              ; #(category-color (.-label %))
+                              :fill-opacity   0.6}))
         add-text (fn [sel]
                    (rid3-> sel
                            (.append "text")
                            {:text-anchor "middle"
-                            :font-size "x-small"
+                            :font-size #(cond
+                                          (= 3 (.-group %)) "small"
+                                          (= 4 (.-group %)) "small"
+                                          :else "x-small")
+                            :font-weight #(if (= 4 (.-group %))
+                                            "bold"
+                                            "normal")
                             :y 5}
                            (.text #(.-name %))))]
     (fn [ratom]
@@ -179,6 +191,8 @@
 
 (defn prechew
   [app-state]
+  #_(doall (for [node (:nodes @app-state)]
+             (prn (:name node) (:categories node))))
   (-> @app-state
       (update :nodes clj->js)
       (update :links clj->js)))
