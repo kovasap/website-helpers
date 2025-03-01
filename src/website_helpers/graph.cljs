@@ -15,21 +15,58 @@
   [hiccup]
   (server/render-static (sab/html hiccup)))
 
+(defn is-branch-node? 
+  [node]
+  (or
+    (= 1 (.-group node))
+    (= 2 (.-group node))))
 
+(defn is-distinguished-node? 
+  [node]
+  (or
+    (= 4 (.-group node))
+    (= 5 (.-group node))))
+
+; The docs at https://d3js.org/d3-force/simulation are helpful for tuning these
+; parameters.
 (defn create-sim
   [viz-state]
-  (let [{:keys [width height link-strength charge-strength center-x center-y
-                collide-size]}
+  (let [{:keys [width height center-x center-y]}
         @viz-state]
     (doto (js/d3.forceSimulation)
       (.stop)
       (.force "link" (-> (js/d3.forceLink)
-                         (.strength link-strength)
+                         (.strength 0.08)
                          (.id #(.-index %))))
       (.force "charge" (-> (js/d3.forceManyBody)
-                           (.strength charge-strength)))
-      (.force "center" (js/d3.forceCenter center-x center-y))
-      (.force "collide" (js/d3.forceCollide collide-size))
+                           (.strength -70)))
+      (.force "center" (-> (js/d3.forceCenter center-x center-y)
+                           (.strength 1.1)))
+      (.force "radial-categories" (-> (js/d3.forceRadial 150 center-x center-y)
+                                      (.strength #(if (and
+                                                        (= 2 (.-group %))
+                                                        (not (= "legend" (.-label %))))
+                                                      0.03 0))))
+      (.force "radial-leaves" (-> (js/d3.forceRadial 500 center-x center-y)
+                                  (.strength #(if (and
+                                                    (not (= 2 (.-group %)))
+                                                    (not (= "legend" (.-label %))))
+                                                0.02 0))))
+      (.force "collide" (-> (js/d3.forceCollide #(if (is-distinguished-node? %)
+                                                     70 35))
+                            (.strength 1.1)))
+      ; This keeps legend nodes above the chart to the side.
+      (.force "legendx" (-> (js/d3.forceX (* 0.5 center-x))
+                            (.strength #(if (= "legend" (.-label %))
+                                            0.2 0))))
+      (.force "legendy" (-> (js/d3.forceY (* 0.5 center-y))
+                            (.strength #(if (= "legend" (.-label %))
+                                            0.2 0))))
+      ; Pull the singular legend node up to separate it from the rest of the
+      ; legend
+      (.force "legendnodex" (-> (js/d3.forceX 0)
+                                (.strength #(if (= "Legend" (.-name %))
+                                                0.3 0))))
       (.on "tick" (fn []
                     (when-let [s (:links-sel @viz-state)]
                       (rid3-> s
@@ -94,16 +131,13 @@
   ; TODO make this width and height the size of the user's screen by default
   (let [viz-state (atom (merge {:width 2000
                                 :height 1500
-                                :link-strength 0.08
-                                :charge-strength -50
                                 :center-x 1000
                                 :center-y 750
-                                :collide-size 30
                                 ; The initial "temperature" of the simulation.
                                 :initial-alpha 4
                                 :hover-text-sel nil
-                                :links-sel nil
-                                :nodes-sel nil}
+                                :links-sel nil ;#(not (= 11 (.-value %))) 
+                                :nodes-sel nil};#(not (= "legend" (.-label %)))}
                                state-override-map))
         sim (create-sim viz-state)
         drag (create-drag sim)
@@ -114,7 +148,8 @@
         ;; Note that this returns colors IN THE ORDER IT IS CALLED, not based
         ;; on the value it is called with (but it will return the same color
         ;; for repeated values).  See https://observablehq.com/@d3/d3-scaleordinal.
-        group-color (js/d3.scaleOrdinal ["#ff7f00" "#377eb8" "#4daf4a" "#984ea3"]) 
+        ; grey "#808080" 
+        group-color (js/d3.scaleOrdinal ["#ff7f00" "#377eb8" "#4daf4a" "#ffff00" "#984ea3"]) 
         category-color (js/d3.scaleOrdinal js/d3.schemeCategory10)
         add-circle (fn [sel]
                      (rid3-> sel
@@ -122,8 +157,10 @@
                              {:stroke         "#fff"
                                               ;#(group-color (.-group %))
                               :stroke-width   1.5
-                              :rx             #(+ 15 (* 3 (count (.-name %))))
-                              :ry             #(/ (max 25 (.-size %)) 1.8)
+                              :rx             #(* (if (is-branch-node? %) 1.3 1)
+                                                  (+ 15 (* 3 (count (.-name %)))))
+                              :ry             #(* (if (is-branch-node? %) 1.3 1)
+                                                  (/ (max 25 (.-size %)) 1.8))
                               :fill           #(group-color (.-group %))
                                               ; #(category-color (.-label %))
                               :fill-opacity   0.6}))
@@ -131,11 +168,11 @@
                    (rid3-> sel
                            (.append "text")
                            {:text-anchor "middle"
-                            :font-size #(cond
-                                          (= 3 (.-group %)) "small"
-                                          (= 4 (.-group %)) "small"
-                                          :else "x-small")
-                            :font-weight #(if (= 4 (.-group %))
+                            :font-size #(if (is-branch-node? %)
+                                          "med"
+                                          "small")
+                            :font-weight #(if (or (= 4 (.-group %))
+                                                  (= 5 (.-group %)))
                                             "bold"
                                             "normal")
                             :y 5}
