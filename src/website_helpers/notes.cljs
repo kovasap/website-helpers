@@ -217,10 +217,23 @@
   (let [category-selections (r/atom
                               (get-url-param-selections
                                 (set (keys (filter-category-selections notes)))
-                                url-params))]
+                                url-params))
+        organization-scheme (r/atom {:directory true
+                                     :most-recent false
+                                     :most-recently-changed false
+                                     :largest false})]
     (fn [] [:div
             [:div
              [dropdown-check-list category-selections "Select Categories"]]
+            [:div "Organize by..."
+             (into [:ul]
+              (for [[scheme selected] @organization-scheme]
+                [:li {:key scheme}
+                 :input {:type "radio"
+                         :name "organization-scheme"
+                         :on-change (fn [_]
+                                      (reset! organization-scheme )
+             [dropdown-check-list organization-scheme "Select Organization Scheme"]]
             (make-category-menu notes
                                 (get-selected-vars @category-selections))])))
 

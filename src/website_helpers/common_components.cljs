@@ -38,5 +38,3 @@
                                              (not (get @vars var)))
                                       (sync-url-params! @vars))}]
                 var]))])))
-
-
