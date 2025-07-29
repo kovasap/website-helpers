@@ -168,24 +168,37 @@
 
 
 (deftest to-tree
-  (def example-categories #{"a 1" "c"})
-  (is (= (notes-by-category-to-children-tree
-          (organize-notes-by-category example-notes example-categories)
-          (index-categories example-categories (count example-notes)))
-         [{:name "a 1", :idx 5,
-           :children
-           [{:name "c", :idx 4,
-             :children
-             [{:name "4", :markdown "text 4", :path "content/docs/4.md",
-               :title "t-4", :categories #{"c" "a 1"}}]}
-            {:name "b", :idx nil,
-             :children
-             [{:name "1", :markdown "text 1", :path "content/docs/1.md",
-               :title "t-1", :categories #{"b" "a 1"}}]}
-            {:name "2", :markdown "text 2", :path "content/docs/2.md",
-             :title "t-2", :categories #{"a 1"}}]}
-          {:name "3", :markdown "text 3", :path "content/docs/3.md",
-           :title "t-3", :categories #{"c"}}])))
+  (let [example-categories #{"a 1" "c"}]
+    (is
+      (= (notes-by-category-to-children-tree
+           (organize-notes-by-category example-notes example-categories)
+           (index-categories example-categories (count example-notes)))
+         [{:name     "a 1"
+           :idx      5
+           :children [{:name     "c"
+                       :idx      4
+                       :children [{:name       "4"
+                                   :markdown   "text 4"
+                                   :path       "content/docs/4.md"
+                                   :title      "t-4"
+                                   :categories #{"c" "a 1"}}]}
+                      {:name     "b"
+                       :idx      nil
+                       :children [{:name       "1"
+                                   :markdown   "text 1"
+                                   :path       "content/docs/1.md"
+                                   :title      "t-1"
+                                   :categories #{"b" "a 1"}}]}
+                      {:name       "2"
+                       :markdown   "text 2"
+                       :path       "content/docs/2.md"
+                       :title      "t-2"
+                       :categories #{"a 1"}}]}
+          {:name       "3"
+           :markdown   "text 3"
+           :path       "content/docs/3.md"
+           :title      "t-3"
+           :categories #{"c"}}]))))
 
 (defn make-category-menu
   [notes selected-categories]
@@ -202,7 +215,7 @@
               [category (contains? @url-params category)])))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
-; with multiple categories will appear in multiple places.")
+; with multiple categories will appear in multiple places.)
 ; (make-category-menu
 ;   example-notes example-selected-categories get-notes-by-category)
 
@@ -211,29 +224,51 @@
 ; (make-category-menu
 ;   example-notes example-selected-categories get-notes-by-largest-category)
 
+(def organization-schemes
+  {:directory #()
+   :most-recent #()
+   :most-recently-changed #()
+   :category get-notes-by-category
+   :largest-category get-notes-by-largest-category})
+
+(defn set-one-to-true
+  [ks k-to-true]
+  (assoc (into {}
+               (for [k ks]
+                 [k false]))
+    k-to-true true))
+  
+(defn organization-radios
+  [organization-scheme]
+  [:div
+   "Organize by..."
+   (into [:ul]
+         (for [[scheme selected] @organization-scheme]
+           [:li {:key scheme}
+            :input
+            {:type      "radio"
+             :name      "organization-scheme"
+             :checked   selected
+             :on-change (fn [_]
+                          (reset! organization-scheme (set-one-to-true
+                                                        (keys
+                                                          organization-schemes)
+                                                        scheme)))}]))])
+
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   [notes]
-  (let [category-selections (r/atom
-                              (get-url-param-selections
-                                (set (keys (filter-category-selections notes)))
-                                url-params))
-        organization-scheme (r/atom {:directory true
-                                     :most-recent false
-                                     :most-recently-changed false
-                                     :largest false})]
+  (let [category-selections (r/atom (get-url-param-selections
+                                      (set (keys (filter-category-selections
+                                                   notes)))
+                                      url-params))
+        organization-scheme (r/atom (set-one-to-true (keys
+                                                       organization-schemes)
+                                                     :directory))]
     (fn [] [:div
             [:div
              [dropdown-check-list category-selections "Select Categories"]]
-            [:div "Organize by..."
-             (into [:ul]
-              (for [[scheme selected] @organization-scheme]
-                [:li {:key scheme}
-                 :input {:type "radio"
-                         :name "organization-scheme"
-                         :on-change (fn [_]
-                                      (reset! organization-scheme )
-             [dropdown-check-list organization-scheme "Select Organization Scheme"]]
+            [organization-radios organization-scheme]
             (make-category-menu notes
                                 (get-selected-vars @category-selections))])))
 
