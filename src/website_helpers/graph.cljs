@@ -15,12 +15,9 @@
   [hiccup]
   (server/render-static (sab/html hiccup)))
 
-(defn is-branch-node? 
+(defn is-branch-node?
   [node]
-  (print node)
-  (or
-    (= 1 (.-group node))
-    (= 2 (.-group node))))
+  (or (= 1 (.-group node)) (= 2 (.-group node))))
 
 (defn is-distinguished-node? 
   [node]
@@ -127,88 +124,93 @@
       (.alpha alpha-target)
       (.restart))))
 
+(defn get-clj [node] (js->clj node :keywordize-keys true))
+
 (defn viz
   [ratom base-link state-override-map]
-  ; TODO make this width and height the size of the user's screen by default
-  (let [viz-state (atom (merge {:width 2000
-                                :height 1500
-                                :center-x 1000
-                                :center-y 750
-                                ; The initial "temperature" of the simulation.
-                                :initial-alpha 4
-                                :hover-text-sel nil
-                                :links-sel nil ;#(not (= 11 (.-value %))) 
-                                :nodes-sel nil};#(not (= "legend" (.-label %)))}
-                               state-override-map))
-        sim (create-sim viz-state)
-        drag (create-drag sim)
+  ; TODO make this width and height the size of the user's screen by
+  ; default
+  (let [viz-state      (atom (merge {:width          2000
+                                     :height         1500
+                                     :center-x       1000
+                                     :center-y       750
+                                     ; The initial "temperature" of the
+                                     ; simulation.
+                                     :initial-alpha  4
+                                     :hover-text-sel nil
+                                     :links-sel      nil  ;#(not (= 11
+                                                          ;(.-value %)))
+                                     :nodes-sel      nil} ;#(not (= "legend"
+                                                          ;(.-label %)))}
+                                    state-override-map))
+        sim            (create-sim viz-state)
+        drag           (create-drag sim)
         ;; See
         ;; https://github.com/d3/d3-scale-chromatic/blob/main/README.md#api-reference
-        ;; for options.
-        ;; See https://stackoverflow.com/a/21208204 for custom schemes.
-        ;; Note that this returns colors IN THE ORDER IT IS CALLED, not based
-        ;; on the value it is called with (but it will return the same color
-        ;; for repeated values).  See https://observablehq.com/@d3/d3-scaleordinal.
-        ; grey "#808080" 
-        group-color (js/d3.scaleOrdinal ["#ff7f00" "#377eb8" "#4daf4a" "#ffff00" "#984ea3"]) 
+        ;; for options. See https://stackoverflow.com/a/21208204 for
+        ;; custom schemes. Note that this returns colors IN THE ORDER IT
+        ;; IS CALLED, not based on the value it is called with (but it
+        ;; will return the same color for repeated values).  See
+        ;; https://observablehq.com/@d3/d3-scaleordinal.
+        ; grey "#808080"
+        group-color    (js/d3.scaleOrdinal
+                         ["#ff7f00" "#377eb8" "#4daf4a" "#ffff00" "#984ea3"])
         category-color (js/d3.scaleOrdinal js/d3.schemeCategory10)
-        add-circle (fn [sel]
-                     (rid3-> sel
-                             (.append "ellipse")
-                             {:stroke         "#fff"
-                                              ;#(group-color (.-group %))
-                              :stroke-width   1.5
-                              :rx             #(* (if (is-branch-node? %) 1.3 1)
-                                                  (+ 15 (* 3 (count (.-name %)))))
-                              :ry             #(* (if (is-branch-node? %) 1.3 1)
-                                                  (/ (max 25 (.-size %)) 1.8))
-                              :fill           #(group-color (.-group %))
-                                              ; #(category-color (.-label %))
-                              :fill-opacity   #(* 0.6
-                                                  (.-opacity-mod %))}))
-        add-text (fn [sel]
-                   (rid3-> sel
-                           (.append "text")
-                           {:text-anchor "middle"
-                            :font-opacity #(* 1.0
-                                              (.-opacity-mod %))
-                            :font-size #(if (is-branch-node? %)
-                                          "med"
-                                          "small")
-                            :font-weight #(if (or (= 4 (.-group %))
-                                                  (= 5 (.-group %)))
-                                            "bold"
-                                            "normal")
-                            :y 5}
-                           (.text #(.-name %))))]
+        add-circle     (fn [sel]
+                         (rid3->
+                           sel
+                           (.append "ellipse")
+                           {:stroke       "#fff"
+                            ;#(group-color (.-group %))
+                            :stroke-width 1.5
+                            :rx           #(* (if (is-branch-node? %) 1.3 1)
+                                              (+ 15 (* 3 (count (.-name %)))))
+                            :ry           #(* (if (is-branch-node? %) 1.3 1)
+                                              (/ (max 25 (.-size %)) 1.8))
+                            :fill         #(group-color (.-group %))
+                            ; #(category-color (.-label %))
+                            :fill-opacity #(* 0.6
+                                              (:opacity-mod (get-clj %)))}))
+        add-text       (fn [sel]
+                         (rid3-> sel
+                                 (.append "text")
+                                 {:text-anchor  "middle"
+                                  :font-opacity #(* 1.0
+                                                    (:opacity-mod (get-clj %)))
+                                  :font-size    #(if (is-branch-node? %)
+                                                   "med"
+                                                   "small")
+                                  :font-weight  #(if (or (= 4 (.-group %))
+                                                         (= 5 (.-group %)))
+                                                   "bold"
+                                                   "normal")
+                                  :y            5}
+                                 (.text #(.-name %))))]
     (fn [ratom]
       [rid3/viz
        {:id     "force-graph"
         :ratom  ratom
-        :svg    {:did-mount
-                 (fn [svg ratom]
-                   (let [{:keys [width height initial-alpha]} @viz-state]
-                     (rid3-> svg
-                             {:width   width
-                              :height  height
-                              :viewBox #js [0 0 width height]})
-                     (update-sim! sim initial-alpha @ratom)))
-                 :did-update
-                 (fn [svg ratom]
-                   (update-sim! sim 0.5 @ratom))}
+        :svg    {:did-mount  (fn [svg ratom]
+                               (let [{:keys [width height initial-alpha]}
+                                     @viz-state]
+                                 (rid3-> svg
+                                         {:width   width
+                                          :height  height
+                                          :viewBox #js [0 0 width height]})
+                                 (update-sim! sim initial-alpha @ratom)))
+                 :did-update (fn [svg ratom] (update-sim! sim 0.5 @ratom))}
         :pieces [{:kind            :elem-with-data
                   :class           "links"
                   :tag             "line"
                   :prepare-dataset (fn [ratom] (:links @ratom))
-                  :did-mount
-                  (fn [sel _ratom]
-                    (swap! viz-state assoc :links-sel sel)
-                    (rid3-> sel
-                            {:stroke         "#999"
-                             :stroke-opacity 0.6
-                             :stroke-width   #(-> (.-value %)
-                                                  js/Math.sqrt
-                                                  (/ 2))}))}
+                  :did-mount       (fn [sel _ratom]
+                                     (swap! viz-state assoc :links-sel sel)
+                                     (rid3-> sel
+                                             {:stroke         "#999"
+                                              :stroke-opacity 0.6
+                                              :stroke-width   #(-> (.-value %)
+                                                                   js/Math.sqrt
+                                                                   (/ 2))}))}
                  {:kind            :elem-with-data
                   :class           "nodes"
                   :tag             "g"
@@ -216,24 +218,29 @@
                   ; See
                   ; https://github.com/kovasap/reddit-tree/blob/main/src/reddit_tree/graph.cljs
                   ; for more possibilities here.
-                  :did-mount (fn [sel _ratom]
-                               (swap! viz-state assoc :nodes-sel sel)
-                               ; Based on https://stackoverflow.com/a/47401796
-                               (add-circle sel)
-                               (add-text sel)
-                               (rid3-> sel
-                                 (.on "dblclick"
-                                      (fn [_event node]
-                                        (js/window.open
-                                          (str base-link
-                                               (replace (.-path node)
-                                                        #" " "+")))))
-                                 (.call drag)))}]}])))
+                  :did-mount       (fn [sel _ratom]
+                                     (swap! viz-state assoc :nodes-sel sel)
+                                     ; Based on
+                                     ; https://stackoverflow.com/a/47401796
+                                     (add-circle sel)
+                                     (add-text sel)
+                                     (rid3-> sel
+                                             (.on "dblclick"
+                                                  (fn [_event node]
+                                                    (js/window.open
+                                                      (str base-link
+                                                           (replace (.-path
+                                                                      node)
+                                                                    #" "
+                                                                    "+")))))
+                                             (.call drag)))}]}])))
 
 (defn prechew
   [app-state]
-  #_(doall (for [node (:nodes @app-state)]
-             (prn (:name node) (:categories node))))
+  (doall (for [node (:nodes @app-state)]
+           (print (select-keys
+                    (js->clj node)
+                    [:last-modified-unix-timestamp :path :opacity-mod]))))
   (-> @app-state
       (update :nodes clj->js)
       (update :links clj->js)))
