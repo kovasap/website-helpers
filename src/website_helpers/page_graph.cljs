@@ -151,6 +151,21 @@
                         20
                         (Math/sqrt (/ % 10)))))
 
+
+(def opacity-mod-min 0.5)
+(def opacity-mod-max 1.0)
+(defn assign-opacity-mod
+  [node all-notes]
+  (let [earliest-mod-time (apply min
+                            (map :last-modified-unix-timestamp all-notes))
+        latest-mod-time   (apply max
+                            (map :last-modified-unix-timestamp all-notes))]
+    (+ opacity-mod-min
+       (* (- opacity-mod-max opacity-mod-min)
+          (/ (- (:last-modified-unix-timestamp node) earliest-mod-time)
+             (- latest-mod-time earliest-mod-time))))))
+  
+
 (defn assign-group
   [node]
   (assoc node :group (cond
@@ -251,9 +266,9 @@
         categories-to-show (if (= 0 (count selected-categories))
                               (set (keys all-categories))
                               selected-categories)
+        notes       (n/get-notes-for-categories notes selected-categories)
         idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ starting-idx i)))
-                                 (n/get-notes-for-categories
-                                   notes selected-categories))
+                                 notes)
         categories-to-idx (assoc (n/index-categories categories-to-show
                                                      (+ starting-idx
                                                         (count idxed-notes)))
@@ -280,6 +295,7 @@
                              (map category-to-node categories-to-show))
                           prettify-name fix-path strip-extension scale-size
                           assign-group
+                          #(assign-opacity-mod % notes)
                           #(assoc % :label (first (:categories %)))
                           #(dissoc % :markdown)))
      :links (concat ; TODO make only links from organize-notes-by-category

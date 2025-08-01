@@ -6,6 +6,7 @@
     ; note that we need to include everything here even if we aren't directly
     ; using it so that cljs includes it in the final build
     [website-helpers.graph]
+    [website-helpers.hyperlink-lists :refer [backlinks-list categories-list]]
     [website-helpers.notes :as n]
     [website-helpers.all-data :refer [notes]]
     [website-helpers.utils :refer [my-md->hiccup]]
@@ -47,12 +48,15 @@
 ;           [:div {:key (:name note)}
 ;            (md->hiccup (:markdown note))])))
 
+; Only visible when building this repo, useful for testing
 (defn home-page []
   (fn []
     [:div
       [:p "hi"]
       [page-graph-from-notes notes]
       [n/random-page notes]
+      [backlinks-list (first notes)]
+      [categories-list (first notes)]
       [n/make-index-menu notes]
       [make-aggregated-items example-experiences]]))
 

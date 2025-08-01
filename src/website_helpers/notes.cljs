@@ -39,6 +39,17 @@
                category (:categories note)]
            {category {:notes #{note}}})))
 
+(defn get-notes-by-directory
+  "Returns a map of path categories (derived from directories) to all notes
+  with that category."
+  [notes]
+  (apply merge-with
+    (partial merge-with union)
+    {}
+    (for [note     notes
+          category (:path-categories note)]
+      {category {:notes #{note}}})))
+
 
 ; (get-notes-by-category example-notes)
 
@@ -155,59 +166,17 @@
             :children (notes-by-category-to-children-tree
                         v categories-to-idx)}])))))
 
-(defn organize-notes-by-category
-  [notes selected-categories]
-  (get-notes-by-largest-category ; Change this for different organization!
-  ; (get-notes-by-category ; Change this for different organization!
-    (get-notes-for-categories notes selected-categories)))
-
 (defn index-categories
   [categories num-notes]
   (into {} (for [[i c] (map-indexed vector categories)]
              [c (+ num-notes i)])))
 
 
-(deftest to-tree
-  (let [example-categories #{"a 1" "c"}]
-    (is
-      (= (notes-by-category-to-children-tree
-           (organize-notes-by-category example-notes example-categories)
-           (index-categories example-categories (count example-notes)))
-         [{:name     "a 1"
-           :idx      5
-           :children [{:name     "c"
-                       :idx      4
-                       :children [{:name       "4"
-                                   :markdown   "text 4"
-                                   :path       "content/docs/4.md"
-                                   :title      "t-4"
-                                   :categories #{"c" "a 1"}}]}
-                      {:name     "b"
-                       :idx      nil
-                       :children [{:name       "1"
-                                   :markdown   "text 1"
-                                   :path       "content/docs/1.md"
-                                   :title      "t-1"
-                                   :categories #{"b" "a 1"}}]}
-                      {:name       "2"
-                       :markdown   "text 2"
-                       :path       "content/docs/2.md"
-                       :title      "t-2"
-                       :categories #{"a 1"}}]}
-          {:name       "3"
-           :markdown   "text 3"
-           :path       "content/docs/3.md"
-           :title      "t-3"
-           :categories #{"c"}}]))))
-
 (defn make-category-menu
-  [notes selected-categories]
-  (make-subtree (organize-notes-by-category notes selected-categories)
+  [notes selected-categories organization-fn]
+  (make-subtree (organization-fn
+                  (get-notes-for-categories notes selected-categories))
                 (get-cur-page-note notes)))
-
-; (organize-notes-by-category
-;   ad/notes 
-;   (get-selected-vars {"..." false, "Social" false, "Lifestyle Optimizations" false}))
 
 (defn filter-category-selections
   [notes]
@@ -225,9 +194,9 @@
 ;   example-notes example-selected-categories get-notes-by-largest-category)
 
 (def organization-schemes
-  {:directory #()
-   :most-recent #()
-   :most-recently-changed #()
+  {:directory get-notes-by-directory
+   :most-recent #(sort-by :created-unix-timestamp %)
+   :most-recently-changed #(sort-by :last-modified-unix-timestamp %)
    :category get-notes-by-category
    :largest-category get-notes-by-largest-category})
 
@@ -269,8 +238,14 @@
             [:div
              [dropdown-check-list category-selections "Select Categories"]]
             [organization-radios organization-scheme]
-            (make-category-menu notes
-                                (get-selected-vars @category-selections))])))
+            (let [selected-organization-scheme
+                  (first (for [[scheme selected?] @organization-scheme
+                               :when selected?]
+                           scheme))]
+              (make-category-menu notes
+                                  (get-selected-vars @category-selections)
+                                  (selected-organization-scheme
+                                    organization-schemes)))])))
 
 
 (defn ^:export random-page

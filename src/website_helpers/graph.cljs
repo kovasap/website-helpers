@@ -163,11 +163,14 @@
                                                   (/ (max 25 (.-size %)) 1.8))
                               :fill           #(group-color (.-group %))
                                               ; #(category-color (.-label %))
-                              :fill-opacity   0.6}))
+                              :fill-opacity   #(* 0.6
+                                                  (.-opacity-mod %))}))
         add-text (fn [sel]
                    (rid3-> sel
                            (.append "text")
                            {:text-anchor "middle"
+                            :font-opacity #(* 1.0
+                                              (.-opacity-mod %))
                             :font-size #(if (is-branch-node? %)
                                           "med"
                                           "small")
