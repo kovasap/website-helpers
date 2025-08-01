@@ -2,7 +2,7 @@
 
 (def notes
   [{:created-unix-timestamp 1601760961
-    :last-modified-unix-timestamp 1753934894
+    :last-modified-unix-timestamp 1753934800
     :path-categories #{"Visual Art"}
     :path "content/docs/visual-art/generative-art.md"
     :backlinks #{"content/docs/visual-art/inspiration-and-resources.md"}

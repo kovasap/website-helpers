@@ -156,14 +156,20 @@
 (def opacity-mod-max 1.0)
 (defn assign-opacity-mod
   [node all-notes]
-  (let [earliest-mod-time (apply min
-                            (map :last-modified-unix-timestamp all-notes))
-        latest-mod-time   (apply max
-                            (map :last-modified-unix-timestamp all-notes))]
-    (+ opacity-mod-min
-       (* (- opacity-mod-max opacity-mod-min)
-          (/ (- (:last-modified-unix-timestamp node) earliest-mod-time)
-             (- latest-mod-time earliest-mod-time))))))
+  (assoc node
+    :opacity-mod
+    (if (nil? (:last-modified-unix-timestamp node))
+      opacity-mod-max
+      (let [earliest-mod-time (apply min
+                                (map :last-modified-unix-timestamp all-notes))
+            latest-mod-time   (apply max
+                                (map :last-modified-unix-timestamp all-notes))]
+        (if (= earliest-mod-time latest-mod-time)
+          opacity-mod-max
+          (+ opacity-mod-min
+             (* (- opacity-mod-max opacity-mod-min)
+                (/ (- (:last-modified-unix-timestamp node) earliest-mod-time)
+                   (- latest-mod-time earliest-mod-time)))))))))
   
 
 (defn assign-group
@@ -206,59 +212,6 @@
   (update node :name #(-> %
                          (replace #"-" " ")
                          (capitalize-words))))
-
-(def legend
-  {:name "LEGEND" :size 5000 :group 4
-   :children [{:name "Category (double-click nodes to filter graph)"
-               :size 5000
-               :group 2
-               :children [{:name "Page (double-click nodes to view)"
-                           :group 3
-                           :size 5000}]}]})
-
-(defn page-tree-to-graph
-  [page-tree]
-  (let [all-subtrees (tree-seq associative? :children
-                               {:name "home"
-                                :children page-tree
-                                :idx 0})]
-    {:nodes (update-nodes all-subtrees
-                          prettify-name fix-path strip-extension scale-size
-                          assign-group)
-     :links (get-links all-subtrees)}))
-
-
-(tree-seq associative? :children
-          {:name "home"
-           :idx 0
-           :children 
-           (let [categories #{"a 1" "c"}
-                 notes (map-indexed (fn [i n] (assoc n :idx (+ 1 i)))
-                                    n/example-notes)]
-             (n/notes-by-category-to-children-tree
-               (n/organize-notes-by-category notes categories)
-               (n/index-categories categories (count notes))))})
-
-(def page-graph-data-simple
-  (r/atom {:nodes [{:name "Home" :size 5 :id "Home"}
-                   {:name "Mind" :size 5 :id "Mind"}]
-           :links [{:source 0 :target 1 :value 2}]}))
-
-(def example-page-graph-data
-  (r/atom (page-tree-to-graph example-page-tree)))
-
-
-(defn ^:export page-graph
-  ([page-tree]
-   (page-graph page-tree #js {}))
-  ([page-tree options]
-   (let [page-graph-data (r/atom (page-tree-to-graph (conj page-tree legend)))]
-     (fn []
-       [:div
-         [g/viz (r/track g/prechew page-graph-data) "https://kovasap.github.io/"
-          (js->clj options :keywordize-keys true)
-          page-graph-data]]))))
-
 
 (defn notes-to-graph
   [notes selected-categories all-categories]

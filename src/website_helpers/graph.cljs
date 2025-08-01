@@ -17,6 +17,7 @@
 
 (defn is-branch-node? 
   [node]
+  (print node)
   (or
     (= 1 (.-group node))
     (= 2 (.-group node))))
