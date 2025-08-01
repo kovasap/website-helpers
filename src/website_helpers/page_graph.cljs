@@ -215,60 +215,85 @@
 
 (defn notes-to-graph
   [notes selected-categories all-categories]
-  (let [starting-idx 6  ; leave room for HOME and LEGEND and other legend nodes
+  (let [starting-idx       6 ; leave room for HOME and LEGEND and other
+                             ; legend nodes
         categories-to-show (if (= 0 (count selected-categories))
-                              (set (keys all-categories))
-                              selected-categories)
-        notes       (n/get-notes-for-categories notes selected-categories)
-        idxed-notes (map-indexed (fn [i n] (assoc n :idx (+ starting-idx i)))
-                                 notes)
-        categories-to-idx (assoc (n/index-categories categories-to-show
-                                                     (+ starting-idx
-                                                        (count idxed-notes)))
-                                 "HOME" 0)
-        category-to-node (fn [c] {:name c
-                                  :idx (get categories-to-idx c)
-                                  :path (str "?" c "=true")
-                                  :tree-path ""
-                                  ; hack for group coloring
-                                  :children [1 1]})]
-    {:nodes (concat
-              [{:name "Home" :idx 0 :group 1 :size 20 :label "home"}
-               {:name "Legend" :idx 1 :group 1 :size 20 :label "legend"}
-               {:name "Category (double-click to filter graph)"
-                :idx 2 :group 2 :size 20 :label "legend"}
-               {:name "Page (double-click to view)" :idx 3 :group 3 :size 20
-                :label "legend"}
-               {:name "Recent Page (double-click to view)" :idx 4 :group 4 :size 20
-                :label "legend"}
-               {:name "Important Page (double-click to view)" :idx 5 :group 5 :size 20
-                :label "legend"}]
-              (update-nodes (concat 
-                             idxed-notes
+                             (set (keys all-categories))
+                             selected-categories)
+        notes              (n/get-notes-for-categories notes
+                                                       selected-categories)
+        idxed-notes        (map-indexed (fn [i n]
+                                          (assoc n :idx (+ starting-idx i)))
+                                        notes)
+        categories-to-idx  (assoc (n/index-categories categories-to-show
+                                                      (+ starting-idx
+                                                         (count idxed-notes)))
+                             "HOME" 0)
+        category-to-node   (fn [c]
+                             {:name      c
+                              :idx       (get categories-to-idx c)
+                              :path      (str "?" c "=true")
+                              :tree-path ""
+                              ; hack for group coloring
+                              :children  [1 1]})]
+    {:nodes
+     (concat
+       [{:name "Home" :idx 0 :group 1 :size 20 :label "home" :opacity-mod 1}
+        {:name        "Legend"
+         :idx         1
+         :group       1
+         :size        20
+         :label       "legend"
+         :opacity-mod 1}
+        {:name        "Category (double-click to filter graph)"
+         :idx         2
+         :group       2
+         :size        20
+         :label       "legend"
+         :opacity-mod 1}
+        {:name        "Page (double-click to view)"
+         :idx         3
+         :group       3
+         :size        20
+         :label       "legend"
+         :opacity-mod 1}
+        {:name        "Recent Page (double-click to view)"
+         :idx         4
+         :group       4
+         :size        20
+         :label       "legend"
+         :opacity-mod 1}
+        {:name        "Important Page (double-click to view)"
+         :idx         5
+         :group       5
+         :size        20
+         :opacity-mod 1
+         :label       "legend"}]
+       (update-nodes (concat idxed-notes
                              (map category-to-node categories-to-show))
-                          prettify-name fix-path strip-extension scale-size
-                          assign-group
-                          #(assign-opacity-mod % notes)
-                          #(assoc % :label (first (:categories %)))
-                          #(dissoc % :markdown)))
+                     prettify-name
+                     fix-path
+                     strip-extension
+                     scale-size
+                     assign-group
+                     #(assign-opacity-mod % notes)
+                     #(assoc % :label (first (:categories %)))
+                     #(dissoc % :markdown)))
      :links (concat ; TODO make only links from organize-notes-by-category
                     ; appear if the number of links is overwhelming
-                    (get-category-links idxed-notes categories-to-idx)
-                    ; All categories link to home
-                    ; TODO make only categories from organize-notes-by-category
-                    ; appear here
-                    (for [[_ i] categories-to-idx]
-                      {:source 0
-                       :target i
-                       :value 3})
-                    ; setup LEGEND nodes
-                    [
-                     ; Do not connect the legend node to the center
-                     ;{:source 0 :target 1 :value 11}
-                     {:source 1 :target 2 :value 11}
-                     {:source 2 :target 3 :value 11}
-                     {:source 2 :target 4 :value 11}
-                     {:source 2 :target 5 :value 11}])}))
+              (get-category-links idxed-notes categories-to-idx)
+              ; All categories link to home
+              ; TODO make only categories from organize-notes-by-category
+              ; appear here
+              (for [[_ i] categories-to-idx]
+                {:source 0 :target i :value 3})
+              ; setup LEGEND nodes
+              [; Do not connect the legend node to the center
+               ;{:source 0 :target 1 :value 11}
+               {:source 1 :target 2 :value 11}
+               {:source 2 :target 3 :value 11}
+               {:source 2 :target 4 :value 11}
+               {:source 2 :target 5 :value 11}])}))
 
 ; TODO make this component update when the url parameters change (e.g. from
 ; make-index-menu).
