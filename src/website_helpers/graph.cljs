@@ -25,59 +25,64 @@
     (= 4 (.-group node))
     (= 5 (.-group node))))
 
-; The docs at https://d3js.org/d3-force/simulation are helpful for tuning these
+; The docs at https://d3js.org/d3-force/simulation are helpful for tuning
+; these
 ; parameters.
 (defn create-sim
   [viz-state]
-  (let [{:keys [width height center-x center-y]}
-        @viz-state]
+  (let [{:keys [width height center-x center-y]} @viz-state]
     (doto (js/d3.forceSimulation)
       (.stop)
-      (.force "link" (-> (js/d3.forceLink)
-                         (.strength 0.08)
-                         (.id #(.-index %))))
-      (.force "charge" (-> (js/d3.forceManyBody)
-                           (.strength -70)))
-      (.force "center" (-> (js/d3.forceCenter center-x center-y)
-                           (.strength 1.1)))
-      (.force "radial-categories" (-> (js/d3.forceRadial 150 center-x center-y)
-                                      (.strength #(if (and
-                                                        (= 2 (.-group %))
-                                                        (not (= "legend" (.-label %))))
-                                                      0.03 0))))
-      (.force "radial-leaves" (-> (js/d3.forceRadial 500 center-x center-y)
-                                  (.strength #(if (and
-                                                    (not (= 2 (.-group %)))
-                                                    (not (= "legend" (.-label %))))
-                                                0.02 0))))
-      (.force "collide" (-> (js/d3.forceCollide #(if (is-distinguished-node? %)
-                                                     70 35))
-                            (.strength 1.1)))
+      (.force "link"
+              (-> (js/d3.forceLink)
+                  (.strength 0.08)
+                  (.id #(.-index %))))
+      (.force "charge"
+              (-> (js/d3.forceManyBody)
+                  (.strength -70)))
+      (.force "center"
+              (-> (js/d3.forceCenter center-x center-y)
+                  (.strength 1.1)))
+      (.force "radial-categories"
+              (-> (js/d3.forceRadial 150 center-x center-y)
+                  (.strength #(if (and (= 2 (.-group %))
+                                       (not (= "legend" (.-label %))))
+                                0.03
+                                0))))
+      (.force "radial-leaves"
+              (-> (js/d3.forceRadial 500 center-x center-y)
+                  (.strength #(if (and (not (= 2 (.-group %)))
+                                       (not (= "legend" (.-label %))))
+                                0.02
+                                0))))
+      (.force "collide"
+              (-> (js/d3.forceCollide #(if (is-distinguished-node? %) 70 35))
+                  (.strength 1.1)))
       ; This keeps legend nodes above the chart to the side.
-      (.force "legendx" (-> (js/d3.forceX (* 0.5 center-x))
-                            (.strength #(if (= "legend" (.-label %))
-                                            0.2 0))))
-      (.force "legendy" (-> (js/d3.forceY (* 0.5 center-y))
-                            (.strength #(if (= "legend" (.-label %))
-                                            0.2 0))))
-      ; Pull the singular legend node up to separate it from the rest of the
-      ; legend
-      (.force "legendnodex" (-> (js/d3.forceX 0)
-                                (.strength #(if (= "Legend" (.-name %))
-                                                0.3 0))))
-      (.on "tick" (fn []
-                    (when-let [s (:links-sel @viz-state)]
-                      (rid3-> s
-                              {:x1 #(.. % -source -x)
-                               :y1 #(.. % -source -y)
-                               :x2 #(.. % -target -x)
-                               :y2 #(.. % -target -y)}))
-                    (when-let [s (:nodes-sel @viz-state)]
-                      (rid3-> s
-                              {:transform
-                               #(str "translate(" (.-x %) "," (.-y %) ")")
-                               :x #(.-x %)
-                               :y #(.-y %)})))))))
+      (.force "legendx"
+              (-> (js/d3.forceX (* 0.5 center-x))
+                  (.strength #(if (= "legend" (.-label %)) 0.2 0))))
+      (.force "legendy"
+              (-> (js/d3.forceY (* 0.5 center-y))
+                  (.strength #(if (= "legend" (.-label %)) 0.2 0))))
+      ; Pull the singular legend node up to separate it from the rest of
+      ; the legend
+      (.force "legendnodex"
+              (-> (js/d3.forceX 0)
+                  (.strength #(if (= "Legend" (.-name %)) 0.3 0))))
+      (.on "tick"
+           (fn []
+             (when-let [s (:links-sel @viz-state)]
+               (rid3-> s
+                       {:x1 #(.. % -source -x)
+                        :y1 #(.. % -source -y)
+                        :x2 #(.. % -target -x)
+                        :y2 #(.. % -target -y)}))
+             (when-let [s (:nodes-sel @viz-state)]
+               (rid3-> s
+                       {:transform #(str "translate(" (.-x %) "," (.-y %) ")")
+                        :x         #(.-x %)
+                        :y         #(.-y %)})))))))
 
 (defn create-drag
   [sim]
@@ -174,17 +179,17 @@
         add-text       (fn [sel]
                          (rid3-> sel
                                  (.append "text")
-                                 {:text-anchor  "middle"
-                                  :font-opacity #(* 1.0
-                                                    (:opacity-mod (get-clj %)))
-                                  :font-size    #(if (is-branch-node? %)
-                                                   "med"
-                                                   "small")
-                                  :font-weight  #(if (or (= 4 (.-group %))
-                                                         (= 5 (.-group %)))
-                                                   "bold"
-                                                   "normal")
-                                  :y            5}
+                                 {:text-anchor "middle"
+                                  :opacity     #(* 1.0
+                                                   (:opacity-mod (get-clj %)))
+                                  :font-size   #(if (is-branch-node? %)
+                                                  "med"
+                                                  "small")
+                                  :font-weight #(if (or (= 4 (.-group %))
+                                                        (= 5 (.-group %)))
+                                                  "bold"
+                                                  "normal")
+                                  :y           5}
                                  (.text #(.-name %))))]
     (fn [ratom]
       [rid3/viz
