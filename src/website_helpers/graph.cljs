@@ -165,9 +165,10 @@
                          (rid3->
                            sel
                            (.append "ellipse")
-                           {:stroke       "#fff"
+                           {:stroke       "#000"
                             ;#(group-color (.-group %))
                             :stroke-width 1.5
+                            :stroke-opacity #(:stroke-opacity-mod (get-clj %))
                             :rx           #(* (if (is-branch-node? %) 1.3 1)
                                               (+ 15 (* 3 (count (.-name %)))))
                             :ry           #(* (if (is-branch-node? %) 1.3 1)

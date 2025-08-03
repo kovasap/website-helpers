@@ -158,17 +158,43 @@
   [node all-notes]
   (assoc node
     :opacity-mod
-    (if (nil? (:last-modified-unix-timestamp node))
-      opacity-mod-max
-      (let [earliest-mod-time (apply min
-                                (map :last-modified-unix-timestamp all-notes))
-            latest-mod-time   (apply max
-                                (map :last-modified-unix-timestamp all-notes))]
+    (let [node-mod-time     (apply max (:modification-unix-timestamps node))
+          earliest-mod-time (apply min
+                              (reduce concat
+                                (map :modification-unix-timestamps all-notes)))
+          latest-mod-time   (apply max
+                              (reduce concat
+                                (map :modification-unix-timestamps
+                                  all-notes)))]
+      (if (nil? node-mod-time)
+        opacity-mod-max
         (if (= earliest-mod-time latest-mod-time)
           opacity-mod-max
           (+ opacity-mod-min
              (* (- opacity-mod-max opacity-mod-min)
-                (/ (- (:last-modified-unix-timestamp node) earliest-mod-time)
+                (/ (- node-mod-time earliest-mod-time)
+                   (- latest-mod-time earliest-mod-time)))))))))
+
+(def stroke-opacity-mod-min 0.0)
+(def stroke-opacity-mod-max 1.0)
+(defn assign-stroke-opacity-mod
+  [node all-notes]
+  (assoc node
+    :stroke-opacity-mod
+    (let [node-mod-num  (count (:modification-unix-timestamps node))
+          least-mod-num (apply min
+                          (map #(count (:modification-unix-timestamps %))
+                            all-notes))
+          most-mod-num  (apply max
+                          (map #(count (:modification-unix-timestamps %))
+                            all-notes))]
+      (if (nil? node-mod-num)
+        stroke-opacity-mod-min
+        (if (= least-mod-num most-mod-num)
+          stroke-opacity-mod-min
+          (+ stroke-opacity-mod-min
+             (* (- stroke-opacity-mod-max stroke-opacity-mod-min)
+                (/ (- node-mod-num earliest-mod-time)
                    (- latest-mod-time earliest-mod-time)))))))))
   
 
