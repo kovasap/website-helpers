@@ -194,8 +194,8 @@
           stroke-opacity-mod-min
           (+ stroke-opacity-mod-min
              (* (- stroke-opacity-mod-max stroke-opacity-mod-min)
-                (/ (- node-mod-num earliest-mod-time)
-                   (- latest-mod-time earliest-mod-time)))))))))
+                (/ (- node-mod-num least-mod-num)
+                   (- most-mod-num least-mod-num)))))))))
   
 
 (defn assign-group
@@ -303,6 +303,7 @@
                      scale-size
                      assign-group
                      #(assign-opacity-mod % notes)
+                     #(assign-stroke-opacity-mod % notes)
                      #(assoc % :label (first (:categories %)))
                      #(dissoc % :markdown)))
      :links (concat ; TODO make only links from organize-notes-by-category

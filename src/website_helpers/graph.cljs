@@ -243,10 +243,10 @@
 
 (defn prechew
   [app-state]
-  (doall (for [node (:nodes @app-state)]
-           (print (select-keys
-                    (js->clj node)
-                    [:last-modified-unix-timestamp :path :opacity-mod]))))
+  #_(doall (for [node (:nodes @app-state)]
+             (print (select-keys
+                      (js->clj node)
+                      [:last-modified-unix-timestamp :path :opacity-mod]))))
   (-> @app-state
       (update :nodes clj->js)
       (update :links clj->js)))

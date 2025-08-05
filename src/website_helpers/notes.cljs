@@ -175,7 +175,7 @@
 (defn make-category-menu
   [notes selected-categories organization-fn]
   (make-subtree (organization-fn
-                  (get-notes-for-categories notes selected-categories))
+                 (get-notes-for-categories notes selected-categories))
                 (get-cur-page-note notes)))
 
 (defn filter-category-selections
@@ -194,10 +194,14 @@
 ;   example-notes example-selected-categories get-notes-by-largest-category)
 
 (def organization-schemes
-  {:directory get-notes-by-directory
-   :most-recent #(sort-by :created-unix-timestamp %)
-   :most-recently-changed #(sort-by :last-modified-unix-timestamp %)
-   :category get-notes-by-category
+  {:directory        get-notes-by-directory
+   :most-recently-created
+   (fn [notes]
+     {:notes (sort-by #(apply min (:modification-unix-timestamps %)) notes)})
+   :most-recently-changed
+   (fn [notes]
+     {:notes (sort-by #(apply max (:modification-unix-timestamps %)) notes)})
+   :category         get-notes-by-category
    :largest-category get-notes-by-largest-category})
 
 (defn set-one-to-true
@@ -214,15 +218,15 @@
    (into [:ul]
          (for [[scheme selected] @organization-scheme]
            [:li {:key scheme}
-            :input
-            {:type      "radio"
-             :name      "organization-scheme"
-             :checked   selected
-             :on-change (fn [_]
-                          (reset! organization-scheme (set-one-to-true
-                                                        (keys
-                                                          organization-schemes)
-                                                        scheme)))}]))])
+            [:input {:type      "radio"
+                     :name      "organization-scheme"
+                     :checked   selected
+                     :on-change (fn [_]
+                                  (reset! organization-scheme
+                                    (set-one-to-true (keys
+                                                       organization-schemes)
+                                                     scheme)))}]
+            scheme]))])
 
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
@@ -233,7 +237,7 @@
                                       url-params))
         organization-scheme (r/atom (set-one-to-true (keys
                                                        organization-schemes)
-                                                     :directory))]
+                                                     :most-recently-changed))]
     (fn [] [:div
             [:div
              [dropdown-check-list category-selections "Select Categories"]]
