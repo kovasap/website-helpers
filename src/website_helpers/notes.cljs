@@ -259,3 +259,9 @@
       [:p "Random Page: " (note->link note nil)
        [:span {:style {:font-size "70%"}}
         " (" (join ", " (:categories note)) ")"]])))
+
+(defn ^:export backlinks-list
+  [note])
+
+(defn ^:export categories-list
+  [note])

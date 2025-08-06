@@ -165,6 +165,8 @@
                          (rid3->
                            sel
                            (.append "ellipse")
+                           ; https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute
+                           ; is a good reference for different properties here.
                            {:stroke       "#000"
                             ;#(group-color (.-group %))
                             :stroke-width 1.5
