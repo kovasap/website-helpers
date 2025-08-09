@@ -1,4 +1,4 @@
-(ns website-helpers.all-data)
+(ns website-helpers.test-data)
 
 (def notes
   [{:path-categories #{"Visual Art"}
@@ -8,7 +8,7 @@
     :markdown "---\nbacklinks-set: \ncategories-set: #{\"Visual Art\"}\ntesting: frontmatter\n---\n\n# Generative Art\n\n## Inspiration\n\nI was originally inspired to work on generative art after viewing this blog:\nhttps://beesandbombs.tumblr.com/. I find it fun to try to imagine how each of\nthese gifs were generated - each one is like a visual puzzle.\n\nSee more inspiration [here]({{< relref \"/docs/visual-art/inspiration-and-resources.md\" >}}).\n\n## My Art\n\nClick on each piece to see it in motion!\n\n[![double helix](/docs/visual-art/double-helix.png)](/docs/visual-art/double-helix-unindexed)\n\n<figure>\n  <a href=\"/docs/visual-art/perlin-flow-unindexed\">\n    <img src=\"/docs/visual-art/perlin-flow.png\" alt=\"perlin flow\"/>\n  </a>\n  <figcaption><small>Note this was done from a tutorial - it's not an original!</small></figcaption>\n</figure>\n\nSource code for the above gifs can be found at\nhttps://github.com/kovasap/generative-art.\n\n<a href=\"https://github.com/kovasap/geometrical_gifs/blob/master/encircle.gif\">\n  <img src=\"/docs/visual-art/encircle.png\" alt=\"encircle\" style=\"width:300px;\"/>\n</a>\n\nSource code for the above gif can be found at\nhttps://github.com/kovasap/geometrical_gifs.\n\nAn even older project can be found at\nhttps://github.com/kovasap/perspective_words. This project was made while doing\nmolecular simulation research, and arranges virtual atoms so that they spell\nout works when looked at from certain angles.\n\n## Ideas to Try\n\n### Sound\n\nAdd music/sound to BeesAndBombs-type visualizations like\n[ChaosDoodle](https://www.youtube.com/watch?v=vcBn04IyELc) videos."
     :name "generative-art.md"
     :private false
-    :categories #{"Visual Art"}
+    :categories #{"Visual Art" "Generative"}
     :dir? false
     :links ["/docs/visual-art/inspiration-and-resources.md"]
     :size 1563

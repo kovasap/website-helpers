@@ -4,16 +4,10 @@
 
 (ns website-helpers.graph 
   (:require
-   [sablono.core :as sab]
-   [sablono.server :as server]
+   [reagent.core :as r]
    [clojure.string :refer [replace]]
    [rid3.core :as rid3 :refer [rid3->]]))
 
-
-(defn html
-  "Turns hiccup like syntax into an HTML string."
-  [hiccup]
-  (server/render-static (sab/html hiccup)))
 
 (defn is-branch-node?
   [node]
@@ -132,10 +126,11 @@
 (defn get-clj [node] (js->clj node :keywordize-keys true))
 
 (defn viz
-  [ratom base-link state-override-map]
+  [graph-data base-link state-override-map]
   ; TODO make this width and height the size of the user's screen by
   ; default
-  (let [viz-state      (atom (merge {:width          2000
+  (let [ratom (r/atom graph-data)
+        viz-state      (atom (merge {:width          2000
                                      :height         1500
                                      :center-x       1000
                                      :center-y       750
@@ -194,7 +189,7 @@
                                                   "normal")
                                   :y           5}
                                  (.text #(.-name %))))]
-    (fn [ratom]
+    ;(fn [ratom]
       [rid3/viz
        {:id     "force-graph"
         :ratom  ratom
@@ -241,14 +236,4 @@
                                                                       node)
                                                                     #" "
                                                                     "+")))))
-                                             (.call drag)))}]}])))
-
-(defn prechew
-  [app-state]
-  #_(doall (for [node (:nodes @app-state)]
-             (print (select-keys
-                      (js->clj node)
-                      [:last-modified-unix-timestamp :path :opacity-mod]))))
-  (-> @app-state
-      (update :nodes clj->js)
-      (update :links clj->js)))
+                                             (.call drag)))}]}]))

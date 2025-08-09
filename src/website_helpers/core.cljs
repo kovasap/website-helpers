@@ -6,9 +6,8 @@
     ; note that we need to include everything here even if we aren't directly
     ; using it so that cljs includes it in the final build
     [website-helpers.graph]
-    [website-helpers.hyperlink-lists :refer [backlinks-list categories-list]]
+    [website-helpers.hyperlink-lists :refer [categories-and-backlinks]]
     [website-helpers.notes :as n]
-    [website-helpers.all-data :refer [notes]]
     [website-helpers.utils :refer [my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
     [cljs.reader]
@@ -19,6 +18,7 @@
     [reagent.core :as r]
     [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
+
 
 (prn "Loaded website helpers!")
 
@@ -53,12 +53,11 @@
   (fn []
     [:div
       [:p "hi"]
-      [page-graph-from-notes notes]
-      [n/random-page notes]
-      [backlinks-list (first notes)]
-      [categories-list (first notes)]
-      [n/make-index-menu notes]
-      [make-aggregated-items example-experiences]]))
+      [page-graph-from-notes]
+      [n/random-page]
+      [categories-and-backlinks "docs/visual-art/generative-art.md"]
+      [n/make-index-menu]]))
+      ; [make-aggregated-items example-experiences]]))
 
 ;; -------------------------
 ;; Initialize app

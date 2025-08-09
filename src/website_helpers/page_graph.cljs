@@ -1,8 +1,9 @@
 (ns website-helpers.page-graph
   (:require
+    [clojure.set :refer [intersection]]
     [website-helpers.graph :as g]
     [website-helpers.notes :as n]
-    [website-helpers.global :refer [url-params]]
+    [website-helpers.global :as global] 
     [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
     [clojure.string :refer [split replace join capitalize]]
     [reagent.core :as r]))
@@ -120,15 +121,6 @@
 ;                     (n/organize-notes-by-category
 ;                       n/example-notes #{"a 1" "c"})))
 
-(defn get-links
-  [all-subtrees]
-  (reduce concat
-    (for [subtree all-subtrees]
-      (into [] (for [child (:children subtree)]
-                 {:source (:idx child)
-                  :target (:idx subtree)
-                  :value 3})))))
-
 (defn get-category-links
   [nodes categories-to-idx]
   (reduce concat
@@ -155,7 +147,7 @@
 (def opacity-mod-min 0.5)
 (def opacity-mod-max 1.0)
 (defn assign-opacity-mod
-  [node all-notes]
+  [node all-notes categories-to-highlight]
   (assoc node
     :opacity-mod
     (let [node-mod-time     (apply max (:modification-unix-timestamps node))
@@ -166,19 +158,19 @@
                               (reduce concat
                                 (map :modification-unix-timestamps
                                   all-notes)))]
-      (if (nil? node-mod-time)
-        opacity-mod-max
-        (if (= earliest-mod-time latest-mod-time)
-          opacity-mod-max
-          (+ opacity-mod-min
-             (* (- opacity-mod-max opacity-mod-min)
-                (/ (- node-mod-time earliest-mod-time)
-                   (- latest-mod-time earliest-mod-time)))))))))
+      (cond (= #{} (intersection categories-to-highlight (:categories node)))
+            (- opacity-mod-min 0.3)
+            (nil? node-mod-time) opacity-mod-max
+            (= earliest-mod-time latest-mod-time) opacity-mod-max
+            :else (+ opacity-mod-min
+                     (* (- opacity-mod-max opacity-mod-min)
+                        (/ (- node-mod-time earliest-mod-time)
+                           (- latest-mod-time earliest-mod-time))))))))
 
 (def stroke-opacity-mod-min 0.0)
 (def stroke-opacity-mod-max 1.0)
 (defn assign-stroke-opacity-mod
-  [node all-notes]
+  [node all-notes categories-to-highlight]
   (assoc node
     :stroke-opacity-mod
     (let [node-mod-num  (count (:modification-unix-timestamps node))
@@ -188,14 +180,14 @@
           most-mod-num  (apply max
                           (map #(count (:modification-unix-timestamps %))
                             all-notes))]
-      (if (nil? node-mod-num)
-        stroke-opacity-mod-min
-        (if (= least-mod-num most-mod-num)
-          stroke-opacity-mod-min
-          (+ stroke-opacity-mod-min
-             (* (- stroke-opacity-mod-max stroke-opacity-mod-min)
-                (/ (- node-mod-num least-mod-num)
-                   (- most-mod-num least-mod-num)))))))))
+      (cond (= #{} (intersection categories-to-highlight (:categories node)))
+            stroke-opacity-mod-min
+            (nil? node-mod-num) stroke-opacity-mod-min
+            (= least-mod-num most-mod-num) stroke-opacity-mod-min
+            :else (+ stroke-opacity-mod-min
+                     (* (- stroke-opacity-mod-max stroke-opacity-mod-min)
+                        (/ (- node-mod-num least-mod-num)
+                           (- most-mod-num least-mod-num))))))))
   
 
 (defn assign-group
@@ -240,28 +232,33 @@
                          (capitalize-words))))
 
 (defn notes-to-graph
-  [notes selected-categories all-categories]
-  (let [starting-idx       6 ; leave room for HOME and LEGEND and other
-                             ; legend nodes
-        categories-to-show (if (= 0 (count selected-categories))
-                             (set (keys all-categories))
-                             selected-categories)
-        notes              (n/get-notes-for-categories notes
-                                                       selected-categories)
-        idxed-notes        (map-indexed (fn [i n]
-                                          (assoc n :idx (+ starting-idx i)))
-                                        notes)
-        categories-to-idx  (assoc (n/index-categories categories-to-show
-                                                      (+ starting-idx
-                                                         (count idxed-notes)))
-                             "HOME" 0)
-        category-to-node   (fn [c]
-                             {:name      c
-                              :idx       (get categories-to-idx c)
-                              :path      (str "?" c "=true")
-                              :tree-path ""
-                              ; hack for group coloring
-                              :children  [1 1]})]
+  [show-unselected-nodes? notes selected-categories all-categories]
+  (let [starting-idx      6 ; leave room for HOME and LEGEND and
+                            ; other legend nodes
+        categories-to-highlight (if (= 0 (count selected-categories))
+                                  all-categories
+                                  selected-categories)
+        notes             (if show-unselected-nodes?
+                            notes
+                            (n/get-notes-for-categories notes
+                                                        selected-categories))
+        idxed-notes       (map-indexed (fn [i n]
+                                         (assoc n :idx (+ starting-idx i)))
+                                       notes)
+        categories-to-idx (if show-unselected-nodes?
+                            all-categories
+                            categories-to-highlight)
+        idxed-categories  (assoc (n/index-categories categories-to-idx
+                                                     (+ starting-idx
+                                                        (count idxed-notes)))
+                            "HOME" 0)
+        category-to-node  (fn [c]
+                            {:name      c
+                             :idx       (get idxed-categories c)
+                             :path      (str "?" c "=true")
+                             :tree-path ""
+                             ; hack for group coloring
+                             :children  [1 1]})]
     {:nodes
      (concat
        [{:name "Home" :idx 0 :group 1 :size 20 :label "home" :opacity-mod 1}
@@ -295,24 +292,24 @@
          :size        20
          :opacity-mod 1
          :label       "legend"}]
-       (update-nodes (concat idxed-notes
-                             (map category-to-node categories-to-show))
-                     prettify-name
-                     fix-path
-                     strip-extension
-                     scale-size
-                     assign-group
-                     #(assign-opacity-mod % notes)
-                     #(assign-stroke-opacity-mod % notes)
-                     #(assoc % :label (first (:categories %)))
-                     #(dissoc % :markdown)))
+       (update-nodes
+         (concat idxed-notes (map category-to-node categories-to-idx))
+         prettify-name
+         fix-path
+         strip-extension
+         scale-size
+         assign-group
+         #(assign-opacity-mod % notes categories-to-highlight)
+         #(assign-stroke-opacity-mod % notes categories-to-highlight)
+         #(assoc % :label (first (:categories %)))
+         #(dissoc % :markdown)))
      :links (concat ; TODO make only links from organize-notes-by-category
                     ; appear if the number of links is overwhelming
-              (get-category-links idxed-notes categories-to-idx)
+              (get-category-links idxed-notes idxed-categories)
               ; All categories link to home
               ; TODO make only categories from organize-notes-by-category
               ; appear here
-              (for [[_ i] categories-to-idx]
+              (for [[_ i] idxed-categories]
                 {:source 0 :target i :value 3})
               ; setup LEGEND nodes
               [; Do not connect the legend node to the center
@@ -322,22 +319,32 @@
                {:source 2 :target 4 :value 11}
                {:source 2 :target 5 :value 11}])}))
 
-; TODO make this component update when the url parameters change (e.g. from
-; make-index-menu).
+(defn build-graph-data
+  [show-unselected-nodes? notes-atom category-selections-atom]
+  #_(doall (for [node (:nodes @app-state)]
+             (print (select-keys
+                      (js->clj node)
+                      [:last-modified-unix-timestamp :path :opacity-mod]))))
+  (-> (notes-to-graph @show-unselected-nodes?
+                      @notes-atom
+                      (get-selected-vars @category-selections-atom)
+                      (set (keys @category-selections-atom)))
+      (update :nodes clj->js)
+      (update :links clj->js)))
+
 (defn ^:export page-graph-from-notes
-  ([notes] (page-graph-from-notes notes #js {}))
-  ([notes options]
-   (fn []
-     (let [all-categories  (get-url-param-selections
-                             (set (keys (n/filter-category-selections notes)))
-                             url-params)
-           page-graph-data (r/atom
-                             (notes-to-graph notes
-                                             (get-selected-vars all-categories)
-                                             all-categories))]
-       [:div
-        [g/viz
-         (r/track g/prechew page-graph-data)
-         "https://kovasap.github.io/"
-         (js->clj options :keywordize-keys true)]]))))
-                      
+  [options]
+  [:div
+   ; Wherever this changes, the component is completely reset
+   ; https://cljdoc.org/d/reagent/reagent/2.0.0-alpha2/doc/frequently-asked-questions/how-do-i-force-component-re-creation-
+   ; I struggled a lot with residual state accumulating in the graph viz
+   ; when updating the input data, leading to lots of wierd bugs I
+   ; couldn't fix.
+   ^{:key @global/graph-update-num}
+   [g/viz
+    ; (r/track build-graph-data global/notes global/category-selections)
+    (build-graph-data global/show-unselected-nodes-in-graph?
+                      global/notes
+                      global/category-selections)
+    "https://kovasap.github.io/"
+    (js->clj options :keywordize-keys true)]])

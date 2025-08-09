@@ -2,9 +2,7 @@
   (:require
     [website-helpers.common-components :refer [dropdown-check-list]]
     [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
-    [website-helpers.schemas :refer [Hiccup ReagentComponent]]
-    [website-helpers.all-data :as ad]
-    [website-helpers.global :refer [url-params]]
+    [website-helpers.global :as global]
     [clojure.set :refer [union difference intersection subset?]]
     [clojure.string :refer [capitalize replace replace-first join]]
     [cljs.test :refer (deftest is)]
@@ -84,8 +82,6 @@
                                largest-notes (conj categories-to-ignore
                                                    largest-category))}
            (get-notes-by-largest-category other-notes categories-to-ignore)))))))
-
-(get-notes-by-largest-category (set ad/notes))
 
 
 (defn path->url
@@ -172,25 +168,20 @@
              [c (+ num-notes i)])))
 
 
-(defn make-category-menu
+(defn make-nested-note-list
   [notes selected-categories organization-fn]
   (make-subtree (organization-fn
-                 (get-notes-for-categories notes selected-categories))
+                  (get-notes-for-categories notes selected-categories))
                 (get-cur-page-note notes)))
-
-(defn filter-category-selections
-  [notes]
-  (into {} (for [category (keys (get-notes-by-category notes))]
-              [category (contains? @url-params category)])))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.)
-; (make-category-menu
+; (make-nested-note-list
 ;   example-notes example-selected-categories get-notes-by-category)
 
 ; Every note has a unique spot, as determined by nested categories (based on
 ; the category's size).
-; (make-category-menu
+; (make-nested-note-list
 ;   example-notes example-selected-categories get-notes-by-largest-category)
 
 (def organization-schemes
@@ -214,8 +205,8 @@
 (defn organization-radios
   [organization-scheme]
   [:div
-   "Organize by..."
-   (into [:ul]
+   [:strong "Organize by..."]
+   (into [:ul {:style {:list-style-type "none" :padding 0 :margin 0}}]
          (for [[scheme selected] @organization-scheme]
            [:li {:key scheme}
             [:input {:type      "radio"
@@ -230,66 +221,45 @@
 
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
-  [notes]
-  (let [category-selections (r/atom (get-url-param-selections
-                                      (set (keys (filter-category-selections
-                                                   notes)))
-                                      url-params))
-        organization-scheme (r/atom (set-one-to-true (keys
+  []
+  (let [organization-scheme (r/atom (set-one-to-true (keys
                                                        organization-schemes)
                                                      :most-recently-changed))]
     (fn [] [:div
             [:div
-             [dropdown-check-list category-selections "Select Categories"]]
+             [dropdown-check-list
+              global/category-selections
+              "Select Categories"
+              global/sync-category-selections!]]
+            [:div
+              [:input {:type      "checkbox"
+                       :name      "show-unselected-nodes-in-graph"
+                       :checked   @global/show-unselected-nodes-in-graph?
+                       :on-change (fn [_]
+                                    (swap! global/graph-update-num inc)
+                                    (swap! global/show-unselected-nodes-in-graph?
+                                      not))}]
+              "Show unselected pages in graph?"]
             [organization-radios organization-scheme]
             (let [selected-organization-scheme
                   (first (for [[scheme selected?] @organization-scheme
                                :when selected?]
                            scheme))]
-              (make-category-menu notes
-                                  (get-selected-vars @category-selections)
-                                  (selected-organization-scheme
-                                    organization-schemes)))])))
+              (make-nested-note-list
+                @global/notes
+                (get-selected-vars @global/category-selections)
+                (selected-organization-scheme organization-schemes)))])))
 
 
 (defn ^:export random-page
-  [notes]
-  (fn []
-    (let [note (rand-nth notes)]
-      [:p "Random Page: " (note->link note nil)
-       [:span {:style {:font-size "70%"}}
-        " (" (join ", " (:categories note)) ")"]])))
-
-(defn markdown-path-to-html-link
-  [path]
-  [:a {:href (-> path
-                 (replace "content/" "/")
-                 (replace ".md" "/"))}
-    path])
-
-(defn category-link
-  [category]
-  [:a {:href (str "/?" (replace category " " "-") "=true")}
-   category])
-
-(defn link-list
-  [title links link-fn]
-  [:div
-   (str title ": ")
-   [:br]
-   (if (nil? links)
-     ""
-     (into [:ul]
-           (for [link links]
-             [:li (link-fn link)])))])
-
-(defn ^:export categories-and-backlinks
-  "current-page-path is a string like docs/visual-art/generative-art.md"
-  [notes current-page-path]
-  (let [current-note (first (filter #(= (:path %)
-                                        (str "content/" current-page-path))
-                              notes))]
-    [:div 
-     (link-list "Backlinks" (:backlinks current-note) markdown-path-to-html-link)
-     [:br]
-     (link-list "Categories" (:categories current-note) category-link)]))
+  ([] (random-page @global/notes))
+  ([notes]
+   (fn []
+     (let [note (rand-nth notes)]
+       [:p
+        "Random Page: "
+        (note->link note nil)
+        [:span {:style {:font-size "70%"}}]
+        " ("
+        (join ", " (:categories note))
+        ")"]))))

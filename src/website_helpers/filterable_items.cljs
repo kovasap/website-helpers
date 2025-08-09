@@ -628,7 +628,7 @@ advantage."
       ; See https://github.com/reagent-project/reagent/issues/18
       (into [:div
              [:h2 data-name]
-             [:div [dropdown-check-list tag-selections "Select Tags"]]] 
+             [:div [dropdown-check-list tag-selections "Select Tags" #()]]] 
             (for [[item-name {:keys [details tags children]}]
                   (sort-by-tags data-map)
                   :let [selected-tags (get-selected-vars @tag-selections)
