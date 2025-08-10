@@ -254,8 +254,7 @@
                 (if (#{:most-recently-created :most-recently-changed}
                      selected-organization-scheme)
                   timestamp->month
-                  identity)
-                key-view-fn))])))
+                  identity)))])))
 
 
 (defn ^:export random-page
