@@ -136,7 +136,7 @@
 
 (defn note-to-li
   [note cur-page-note]
-  [:li {:key (:name note)}
+  [:li {:key (:path note)}
    (note->link note cur-page-note)])
 
 

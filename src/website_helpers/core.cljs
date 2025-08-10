@@ -46,7 +46,7 @@
 ;   [notes]
 ;   (into [:div [:h1 "All Notes"]]
 ;         (for [note notes]
-;           [:div {:key (:name note)}
+;           [:div {:key (:path note)}
 ;            (md->hiccup (:markdown note))])))
 
 ; Only visible when building this repo, useful for testing
