@@ -346,6 +346,7 @@
    ; when updating the input data, leading to lots of wierd bugs I
    ; couldn't fix.
    ^{:key @global/graph-update-num}
+   (prn "rerender " @global/graph-update-num)
    [g/viz
     ; (r/track build-graph-data global/notes global/category-selections)
     (build-graph-data global/show-unselected-nodes-in-graph?
