@@ -35,15 +35,16 @@
   ([current-page-path]
    (categories-and-backlinks @global/notes current-page-path))
   ([notes current-page-path]
-   (let [current-note (first (filter #(= (:path %)
-                                         (str "content/" current-page-path))
-                               notes))]
-     [:div
-      (link-list "Backlinks"
-                 (:backlinks current-note)
-                 markdown-path-to-html-link)
-      [:br]
-      (link-list "Categories" (:categories current-note) category-link)])))
+   (fn [notes current-page-path]
+     (let [current-note (first (filter #(= (:path %)
+                                           (str "content/" current-page-path))
+                                 notes))]
+       [:div
+        (link-list "Backlinks"
+                   (:backlinks current-note)
+                   markdown-path-to-html-link)
+        [:br]
+        (link-list "Categories" (:categories current-note) category-link)]))))
 
 (defn ^:export categories-and-backlinks-to-element
   "current-page-path is a string like docs/visual-art/generative-art.md"
