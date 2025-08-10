@@ -151,7 +151,8 @@
                                                (cond 
                                                  (string? k) k
                                                  (int? k) (- k)
-                                                 :else (name k))) 
+                                                 (keyword? k) (name k)
+                                                 :else (doto k prn))) 
                                             notes-by-category)]
             (if (= category :notes)
               (into [] (for [note subtree] (note-to-li note cur-page)))
