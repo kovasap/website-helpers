@@ -98,6 +98,31 @@
                    "en-US"
                    #js {:month "long" :year "numeric"}))
   
+(defn month-name-to-index [month-name]
+  (case month-name
+    "January" 0
+    "February" 1
+    "March" 2
+    "April" 3
+    "May" 4
+    "June" 5
+    "July" 6
+    "August" 7
+    "September" 8
+    "October" 9
+    "November" 10
+    "December" 11
+    nil))
+
+(defn month->timestamp [date-string]
+  (let [[month-name year-str] (clojure.string/split date-string #" ")
+        year (js/parseInt year-str)
+        month-index (month-name-to-index month-name)]
+    (if (and month-index year)
+      (let [js-date (new js/Date year month-index 1)]
+        ;; Convert milliseconds to seconds and floor to ensure it's an integer
+        (js/Math.floor (/ (.getTime js-date) 1000)))
+      nil)))
 
 (defn last-modification-time
   [note]
@@ -105,9 +130,11 @@
 
 (def organization-schemes
   {:directory        get-notes-by-directory
-   :most-recently-created (fn [notes] (get-notes-by-fn notes creation-time))
-   :most-recently-changed (fn [notes]
-                            (get-notes-by-fn notes last-modification-time))
+   :most-recently-created
+   (fn [notes] (get-notes-by-fn notes (comp timestamp->month creation-time)))
+   :most-recently-changed
+   (fn [notes]
+     (get-notes-by-fn notes (comp timestamp->month last-modification-time)))
    :category         get-notes-by-category
    :largest-category get-notes-by-largest-category})
 
@@ -141,34 +168,37 @@
     (first (filter #(= (path->url (:path %)) url) possible-notes))))
 
 
-; Separate key-view-fn allows us to sort before converting to a human readable
-; name.
 (defn make-nested-note-html
-  [notes-by-category cur-page key-view-fn]
+  [notes-by-category cur-page]
   (into [:ul]
         (reduce concat
-          (for [[category subtree] (sort-by #(let [k (first %)]
-                                               (cond 
-                                                 (string? k) k
-                                                 (int? k) (- k)
-                                                 (keyword? k) (name k)
-                                                 (nil? k) (- 1000)
-                                                 :else (doto k prn))) 
-                                            notes-by-category)]
+          (for [[category subtree] (sort-by
+                                     #(let [k (first %)]
+                                        (cond (not (nil? (month->timestamp k)))
+                                              (- (month->timestamp k))
+                                              (string? k)  k
+                                              (int? k)     (- k)
+                                              (keyword? k) (name k)
+                                              (nil? k)     (- 1000)
+                                              :else        (doto k prn)))
+                                     notes-by-category)]
             (if (= category :notes)
-              (into [] (for [note subtree] (note-to-li note cur-page)))
+              (into []
+                    (for [note subtree]
+                      (note-to-li note cur-page)))
               [[:li {:key category}
                 [:details {:id   category
                            :open (or
-                                   ; Expand all menus for the current page.
+                                   ; Expand all menus for the current
+                                   ; page.
                                    (contains? (:categories cur-page) category)
-                                   ; Expand all menus if there are few enough
-                                   ; items
+                                   ; Expand all menus if there are few
+                                   ; enough items
                                    (> 5
                                       (count (reduce concat
                                                (vals notes-by-category)))))}
-                 [:summary [:strong (capitalize (key-view-fn category))]]
-                 (make-nested-note-html subtree cur-page key-view-fn)]]])))))
+                 [:summary [:strong (capitalize category)]]
+                 (make-nested-note-html subtree cur-page)]]])))))
 
 ; -------------------------------------------------------------------------
 
@@ -185,11 +215,10 @@
            notes))))
 
 (defn make-nested-note-list
-  [notes selected-categories organization-fn key-view-fn]
+  [notes selected-categories organization-fn]
   (make-nested-note-html
     (organization-fn (get-notes-for-categories notes selected-categories))
-    (get-cur-page-note notes)
-    key-view-fn))
+    (get-cur-page-note notes)))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.)
@@ -255,11 +284,7 @@
               (make-nested-note-list
                 @global/notes
                 (get-selected-vars @global/category-selections)
-                (selected-organization-scheme organization-schemes)
-                (if (#{:most-recently-created :most-recently-changed}
-                     selected-organization-scheme)
-                  timestamp->month
-                  identity)))])))
+                (selected-organization-scheme organization-schemes)))])))
 
 
 (defn ^:export random-page
