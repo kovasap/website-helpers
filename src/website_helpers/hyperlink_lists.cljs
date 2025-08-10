@@ -1,6 +1,7 @@
 (ns website-helpers.hyperlink-lists
   (:require [clojure.string :refer [replace]]
-            [website-helpers.global :as global]))
+            [website-helpers.global :as global]
+            [reagent.dom :as d]))
 
 ; TODO make these not just pull from the sections, but actually make the html so
 ; that we get working links
@@ -44,3 +45,9 @@
                    markdown-path-to-html-link)
         [:br]
         (link-list "Categories" (:categories current-note) category-link)]))))
+
+(defn ^:export categories-and-backlinks-to-element
+  "current-page-path is a string like docs/visual-art/generative-art.md"
+  [current-page-path element-id]
+  (d/render (categories-and-backlinks current-page-path)
+            (.getElementById js/document element-id)))

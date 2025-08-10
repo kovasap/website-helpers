@@ -41,7 +41,6 @@
 ; 2 components I think).  They cannot just be raw hiccup.
 (defn ^:export render-to-element
   [component element-id]
-  (prn component element-id)
   (d/render [component] (.getElementById js/document element-id)))
 
 ; Done in joker, so not necessary to do here currently.
