@@ -152,6 +152,7 @@
                                                  (string? k) k
                                                  (int? k) (- k)
                                                  (keyword? k) (name k)
+                                                 (nil? k) (- 1000)
                                                  :else (doto k prn))) 
                                             notes-by-category)]
             (if (= category :notes)
