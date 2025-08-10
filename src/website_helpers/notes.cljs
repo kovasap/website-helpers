@@ -105,11 +105,9 @@
 
 (def organization-schemes
   {:directory        get-notes-by-directory
-   :most-recently-created
-   (fn [notes] (into (sorted-map) (get-notes-by-fn notes creation-time)))
-   :most-recently-changed
-   (fn [notes]
-     (into (sorted-map) (get-notes-by-fn notes last-modification-time)))
+   :most-recently-created (fn [notes] (get-notes-by-fn notes creation-time))
+   :most-recently-changed (fn [notes]
+                            (get-notes-by-fn notes last-modification-time))
    :category         get-notes-by-category
    :largest-category get-notes-by-largest-category})
 
@@ -142,13 +140,18 @@
   (let [url (.. js/window -location -pathname)]
     (first (filter #(= (path->url (:path %)) url) possible-notes))))
 
-   
+
+; Separate key-view-fn allows us to sort before converting to a human readable
+; name.
 (defn make-nested-note-html
   [notes-by-category cur-page key-view-fn]
   (into [:ul]
         (reduce concat
           (for [[category subtree] (sort-by #(let [k (first %)]
-                                               (if (string? k) k (name k)))
+                                               (cond 
+                                                 (string? k) k
+                                                 (int? k) (- k)
+                                                 :else (name k))) 
                                             notes-by-category)]
             (if (= category :notes)
               (into [] (for [note subtree] (note-to-li note cur-page)))
