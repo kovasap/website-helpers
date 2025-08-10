@@ -48,5 +48,5 @@
 (defn ^:export categories-and-backlinks-to-element
   "current-page-path is a string like docs/visual-art/generative-art.md"
   [current-page-path element-id]
-  (d/render (categories-and-backlinks current-page-path)
+  (d/render [(categories-and-backlinks current-page-path)]
             (.getElementById js/document element-id)))
