@@ -7,7 +7,7 @@
     ; using it so that cljs includes it in the final build
     [website-helpers.graph]
     [website-helpers.global]
-    [website-helpers.hyperlink-lists :refer [categories-and-backlinks]]
+    [website-helpers.hyperlink-lists :as h]
     [website-helpers.notes :as n]
     [website-helpers.utils :refer [my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
@@ -58,7 +58,7 @@
       [:p "hi"]
       [page-graph-from-notes]
       [n/random-page]
-      [categories-and-backlinks "docs/visual-art/generative-art.md"]
+      [h/categories-and-backlinks "docs/visual-art/generative-art.md"]
       [n/make-index-menu]]))
       ; [make-aggregated-items example-experiences]]))
 
