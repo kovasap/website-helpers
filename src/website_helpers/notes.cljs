@@ -106,14 +106,10 @@
 (def organization-schemes
   {:directory        get-notes-by-directory
    :most-recently-created
-   (fn [notes]
-     (update-keys (into (sorted-map) (get-notes-by-fn notes creation-time))
-                  timestamp->month))
+   (fn [notes] (into (sorted-map) (get-notes-by-fn notes creation-time)))
    :most-recently-changed
    (fn [notes]
-     (update-keys (into (sorted-map)
-                        (get-notes-by-fn notes last-modification-time))
-                  timestamp->month))
+     (into (sorted-map) (get-notes-by-fn notes last-modification-time)))
    :category         get-notes-by-category
    :largest-category get-notes-by-largest-category})
 
@@ -148,7 +144,7 @@
 
    
 (defn make-nested-note-html
-  [notes-by-category cur-page]
+  [notes-by-category cur-page key-view-fn]
   (into [:ul]
         (reduce concat
           (for [[category subtree] (sort-by #(let [k (first %)]
@@ -166,8 +162,8 @@
                                    (> 5
                                       (count (reduce concat
                                                (vals notes-by-category)))))}
-                 [:summary [:strong (capitalize category)]]
-                 (make-nested-note-html subtree cur-page)]]])))))
+                 [:summary [:strong (capitalize (key-view-fn category))]]
+                 (make-nested-note-html subtree cur-page key-view-fn)]]])))))
 
 ; -------------------------------------------------------------------------
 
@@ -184,10 +180,11 @@
            notes))))
 
 (defn make-nested-note-list
-  [notes selected-categories organization-fn]
+  [notes selected-categories organization-fn key-view-fn]
   (make-nested-note-html
     (organization-fn (get-notes-for-categories notes selected-categories))
-    (get-cur-page-note notes)))
+    (get-cur-page-note notes)
+    key-view-fn))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.)
@@ -236,14 +233,15 @@
               "Select Categories"
               global/sync-category-selections!]]
             [:div
-              [:input {:type      "checkbox"
-                       :name      "show-unselected-nodes-in-graph"
-                       :checked   @global/show-unselected-nodes-in-graph?
-                       :on-change (fn [_]
-                                    (swap! global/graph-update-num inc)
-                                    (swap! global/show-unselected-nodes-in-graph?
-                                      not))}]
-              "Show unselected pages in graph?"]
+             [:input {:type      "checkbox"
+                      :name      "show-unselected-nodes-in-graph"
+                      :checked   @global/show-unselected-nodes-in-graph?
+                      :on-change (fn [_]
+                                   (swap! global/graph-update-num inc)
+                                   (swap!
+                                     global/show-unselected-nodes-in-graph?
+                                     not))}]
+             "Show unselected pages in graph?"]
             [organization-radios organization-scheme]
             (let [selected-organization-scheme
                   (first (for [[scheme selected?] @organization-scheme
@@ -252,7 +250,12 @@
               (make-nested-note-list
                 @global/notes
                 (get-selected-vars @global/category-selections)
-                (selected-organization-scheme organization-schemes)))])))
+                (selected-organization-scheme organization-schemes)
+                (if (#{:most-recently-created :most-recently-changed}
+                     selected-organization-scheme)
+                  timestamp->month
+                  identity)
+                key-view-fn))])))
 
 
 (defn ^:export random-page
