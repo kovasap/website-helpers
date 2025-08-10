@@ -6,6 +6,7 @@
     ; note that we need to include everything here even if we aren't directly
     ; using it so that cljs includes it in the final build
     [website-helpers.graph]
+    [website-helpers.global]
     [website-helpers.hyperlink-lists :refer [categories-and-backlinks]]
     [website-helpers.notes :as n]
     [website-helpers.utils :refer [my-md->hiccup]]
