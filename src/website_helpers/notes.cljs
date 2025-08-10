@@ -5,7 +5,6 @@
     [website-helpers.global :as global]
     [clojure.set :refer [union difference intersection subset?]]
     [clojure.string :refer [capitalize replace replace-first join]]
-    [cljs.test :refer (deftest is)]
     [reagent.core :as r]))
 
 (def Note
@@ -26,6 +25,7 @@
    (ex-note "3" #{"c"})
    (ex-note "4" #{"a 1" "c"})])
 
+; ---------- Organizing Notes ----------------------------------------
 
 (defn get-notes-by-category
   "Returns a map of categories to all notes with that category."
@@ -83,6 +83,40 @@
                                                    largest-category))}
            (get-notes-by-largest-category other-notes categories-to-ignore)))))))
 
+; Not a recursively nested grouping like some of the others
+(defn get-notes-by-fn
+  [notes f]
+  (update-vals (group-by f notes) (fn [v] {:notes v})))
+
+(defn creation-time
+  [note]
+  (apply min (:modification-unix-timestamps note)))
+
+(defn timestamp->month
+  [timestamp]
+  (.toLocaleString (js/Date. (* timestamp 1000))
+                   "en-US"
+                   #js {:month "long" :year "numeric"}))
+  
+
+(defn last-modification-time
+  [note]
+  (apply max (:modification-unix-timestamps note)))
+
+(def organization-schemes
+  {:directory        get-notes-by-directory
+   :most-recently-created (fn [notes]
+                            (get-notes-by-fn (sort-by creation-time notes)
+                                             (comp timestamp->month
+                                                   creation-time)))
+   :most-recently-changed (fn [notes]
+                            (get-notes-by-fn
+                              (sort-by last-modification-time notes)
+                              (comp timestamp->month last-modification-time)))
+   :category         get-notes-by-category
+   :largest-category get-notes-by-largest-category})
+
+; ------------- Constucting nested HTML list ---------------------------
 
 (defn path->url
   [path]
@@ -112,7 +146,7 @@
     (first (filter #(= (path->url (:path %)) url) possible-notes))))
 
    
-(defn make-subtree
+(defn make-nested-note-html
   [notes-by-category cur-page]
   (into [:ul]
         (reduce concat
@@ -132,13 +166,13 @@
                                       (count (reduce concat
                                                (vals notes-by-category)))))}
                  [:summary [:strong (capitalize category)]]
-                 (make-subtree subtree cur-page)]]])))))
+                 (make-nested-note-html subtree cur-page)]]])))))
 
+; -------------------------------------------------------------------------
 
 (defn overlap?
   [set1 set2]
   (not (empty? (intersection set1 set2))))
-
 
 (defn get-notes-for-categories
   [notes selected-categories]
@@ -148,31 +182,11 @@
            #(subset? selected-categories (:categories %))
            notes))))
 
-(defn notes-by-category-to-children-tree
-  "Converts a map produced by get-notes-by-category to a PageTree)
-  readable by page_graph.cljs logic."
-  [notes-by-category categories-to-idx]
-  (into []
-    (reduce concat
-      (for [[k v] notes-by-category]
-        (if (= :notes k)
-          (vec v)
-          [{:name k
-            :idx (get categories-to-idx k)
-            :children (notes-by-category-to-children-tree
-                        v categories-to-idx)}])))))
-
-(defn index-categories
-  [categories num-notes]
-  (into {} (for [[i c] (map-indexed vector categories)]
-             [c (+ num-notes i)])))
-
-
 (defn make-nested-note-list
   [notes selected-categories organization-fn]
-  (make-subtree (organization-fn
-                  (get-notes-for-categories notes selected-categories))
-                (get-cur-page-note notes)))
+  (make-nested-note-html
+    (organization-fn (get-notes-for-categories notes selected-categories))
+    (get-cur-page-note notes)))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.)
@@ -183,17 +197,6 @@
 ; the category's size).
 ; (make-nested-note-list
 ;   example-notes example-selected-categories get-notes-by-largest-category)
-
-(def organization-schemes
-  {:directory        get-notes-by-directory
-   :most-recently-created
-   (fn [notes]
-     {:notes (sort-by #(apply min (:modification-unix-timestamps %)) notes)})
-   :most-recently-changed
-   (fn [notes]
-     {:notes (sort-by #(apply max (:modification-unix-timestamps %)) notes)})
-   :category         get-notes-by-category
-   :largest-category get-notes-by-largest-category})
 
 (defn set-one-to-true
   [ks k-to-true]

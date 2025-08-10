@@ -231,6 +231,11 @@
                          (replace #"-" " ")
                          (capitalize-words))))
 
+(defn index-categories
+  [categories num-notes]
+  (into {} (for [[i c] (map-indexed vector categories)]
+             [c (+ num-notes i)])))
+
 (defn notes-to-graph
   [show-unselected-nodes? notes selected-categories all-categories]
   (let [starting-idx      6 ; leave room for HOME and LEGEND and
@@ -248,9 +253,9 @@
         categories-to-idx (if show-unselected-nodes?
                             all-categories
                             categories-to-highlight)
-        idxed-categories  (assoc (n/index-categories categories-to-idx
-                                                     (+ starting-idx
-                                                        (count idxed-notes)))
+        idxed-categories  (assoc (index-categories categories-to-idx
+                                                   (+ starting-idx
+                                                      (count idxed-notes)))
                             "HOME" 0)
         category-to-node  (fn [c]
                             {:name      c
