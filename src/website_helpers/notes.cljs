@@ -105,14 +105,15 @@
 
 (def organization-schemes
   {:directory        get-notes-by-directory
-   :most-recently-created (fn [notes]
-                            (get-notes-by-fn (sort-by creation-time notes)
-                                             (comp timestamp->month
-                                                   creation-time)))
-   :most-recently-changed (fn [notes]
-                            (get-notes-by-fn
-                              (sort-by last-modification-time notes)
-                              (comp timestamp->month last-modification-time)))
+   :most-recently-created
+   (fn [notes]
+     (update-keys (into (sorted-map) (get-notes-by-fn notes creation-time))
+                  timestamp->month))
+   :most-recently-changed
+   (fn [notes]
+     (update-keys (into (sorted-map)
+                        (get-notes-by-fn notes last-modification-time))
+                  timestamp->month))
    :category         get-notes-by-category
    :largest-category get-notes-by-largest-category})
 
