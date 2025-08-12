@@ -15,7 +15,8 @@
     [clojure.string :refer [split replace join includes? capitalize]]
     [clojure.set :refer [union intersection subset?]]
     [clojure.walk :refer [postwalk]]
-    [reagent.dom :as d]
+    [reagent.dom :as rd]
+    [reagent.dom.server :as rds]
     [reagent.core :as r]
     [malli.dev.cljs :as dev]
     [malli.dev.pretty :as pretty]))
@@ -38,10 +39,15 @@
 ; (read-edn-string "\n\n[[&#34;Comparing prices&#34;\n  &#34;When buying a good or service, comparing many alternatives to find the\n  best price. For example, looking at the price per pound of various grocery\n  items and picking the one with the lowest price.&#34;\n  [&#34;habit&#34;]\n  [[&#34;Saves some money&#34;\n    &#34;&#34;\n    [&#34;positive&#34;]]\n   [&#34;Optimization problem&#34;\n    &#34;Involves constantly scanning many options and determining the best one.&#34;\n    [&#34;engaging&#34;]]]]\n [&#34;Slipways&#34;\n  &#34;A video game about colonizing planets and connecting them with trade\n  routes.&#34;\n  [&#34;game&#34; &#34;solitary&#34;]\n  [[&#34;Optimization problem&#34;]]]]\n\n\n")
 
 ; Components passed to this function must be defined as nested functions (type
-; 2 components I think).  They cannot just be raw hiccup.
+; 2 components I think).  They cannot just be raw hiccup, otherwise you get an
+; "invalid arity" error.
 (defn ^:export render-to-element
   [component element-id]
-  (d/render [component] (.getElementById js/document element-id)))
+  (rd/render [component] (.getElementById js/document element-id)))
+
+(defn ^:export render-to-string
+  [component]
+  (rds/render-to-string [component]))
 
 ; Done in joker, so not necessary to do here currently.
 ; (defn ^:export make-all-notes-page
@@ -66,7 +72,7 @@
 ;; Initialize app
 
 (defn mount-root []
-  (d/render [home-page] (.getElementById js/document "app")))
+  (rd/render [home-page] (.getElementById js/document "app")))
 
 (defn ^:dev/after-load refresh []
   (prn "Hot code Remount")
