@@ -34,11 +34,12 @@
   ([current-page-path]
    (categories-and-backlinks @global/notes current-page-path))
   ([notes current-page-path]
-   (let [current-note (first (filter #(= (:path %)
-                                         (str "content/" current-page-path))
-                               notes))]
-     [:div
-      (link-list "Backlinks"
-                 (:backlinks current-note)
-                 markdown-path-to-html-link)
-      (link-list "Categories" (:categories current-note) category-link)])))
+   (fn []
+     (let [current-note (first (filter #(= (:path %)
+                                           (str "content/" current-page-path))
+                                 notes))]
+       [:div
+        (link-list "Backlinks"
+                   (:backlinks current-note)
+                   markdown-path-to-html-link)
+        (link-list "Categories" (:categories current-note) category-link)]))))
