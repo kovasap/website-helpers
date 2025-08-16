@@ -339,18 +339,19 @@
 
 (defn ^:export page-graph-from-notes
   [options]
-  [:div
-   ; Wherever this changes, the component is completely reset
-   ; https://cljdoc.org/d/reagent/reagent/2.0.0-alpha2/doc/frequently-asked-questions/how-do-i-force-component-re-creation-
-   ; I struggled a lot with residual state accumulating in the graph viz
-   ; when updating the input data, leading to lots of wierd bugs I
-   ; couldn't fix.
-   ^{:key @global/graph-update-num}
-   (prn "rerender " @global/graph-update-num)
-   [g/viz
-    ; (r/track build-graph-data global/notes global/category-selections)
-    (build-graph-data global/show-unselected-nodes-in-graph?
-                      global/notes
-                      global/category-selections)
-    "https://kovasap.github.io/"
-    (js->clj options :keywordize-keys true)]])
+  (fn [] [:div
+          ; Wherever this changes, the component is completely reset
+          ; https://cljdoc.org/d/reagent/reagent/2.0.0-alpha2/doc/frequently-asked-questions/how-do-i-force-component-re-creation-
+          ; I struggled a lot with residual state accumulating in the
+          ; graph viz when updating the input data, leading to lots of
+          ; wierd bugs I couldn't fix.
+          ^{:key @global/graph-update-num}
+          (prn "rerender " @global/graph-update-num)
+          [g/viz
+           ; (r/track build-graph-data global/notes
+           ; global/category-selections)
+           (build-graph-data global/show-unselected-nodes-in-graph?
+                             global/notes
+                             global/category-selections)
+           "https://kovasap.github.io/"
+           (js->clj options :keywordize-keys true)]]))
