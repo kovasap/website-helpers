@@ -47,4 +47,8 @@
         (link-list "Backlinks"
                    (:backlinks current-note)
                    markdown-path-to-html-link)
-        (link-list "Categories" (:categories current-note) category-link)]))))
+        (link-list "Categories" (:categories current-note) category-link)
+        [:span
+         "Page modified "
+         (count (:modification-unix-timestamps current-note))
+         " times."]]))))

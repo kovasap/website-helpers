@@ -238,7 +238,7 @@
 
 (defn notes-to-graph
   [show-unselected-nodes? notes selected-categories all-categories]
-  (let [starting-idx      6 ; leave room for HOME and LEGEND and
+  (let [starting-idx      8 ; leave room for HOME and LEGEND and
                             ; other legend nodes
         categories-to-highlight (if (= 0 (count selected-categories))
                                   all-categories
@@ -272,29 +272,48 @@
          :group       1
          :size        20
          :label       "legend"
+         :stroke-opacity-mod 0.5
          :opacity-mod 1}
         {:name        "Category (double-click to filter graph)"
          :idx         2
          :group       2
          :size        20
          :label       "legend"
+         :stroke-opacity-mod 0.5
+         :opacity-mod 1}
+        {:name        "Lighter nodes were edited longer ago"
+         :idx         3
+         :group       3
+         :size        10
+         :stroke-opacity-mod 0.5
+         :label       "legend"
+         :opacity-mod 0.5}
+        {:name        "Nodes with darker outlines have been edited more times."
+         :idx         4
+         :group       3
+         :size        10
+         :stroke-opacity-mod 1.0 
+         :label       "legend"
          :opacity-mod 1}
         {:name        "Page (double-click to view)"
-         :idx         3
+         :idx         5
          :group       3
          :size        20
          :label       "legend"
+         :stroke-opacity-mod 0.5
          :opacity-mod 1}
         {:name        "Recent Page (double-click to view)"
-         :idx         4
+         :idx         6
          :group       4
          :size        20
          :label       "legend"
+         :stroke-opacity-mod 0.5
          :opacity-mod 1}
         {:name        "Important Page (double-click to view)"
-         :idx         5
+         :idx         7
          :group       5
          :size        20
+         :stroke-opacity-mod 0.5
          :opacity-mod 1
          :label       "legend"}]
        (update-nodes
