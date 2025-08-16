@@ -3,11 +3,8 @@
             [website-helpers.graph :as g]
             [website-helpers.notes :as n]
             [website-helpers.global :as global]
-            [website-helpers.utils
-             :refer-macros
-             [seconds-taken]
-             :refer
-             [get-selected-vars]]
+            [website-helpers.macros :refer-macros [seconds-taken]]
+            [website-helpers.utils :refer [get-selected-vars]]
             [clojure.string :refer [split replace join capitalize]]
             [reagent.core :as r]))
 

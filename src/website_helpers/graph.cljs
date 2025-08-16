@@ -6,7 +6,7 @@
   (:require
    [reagent.core :as r]
    [clojure.string :refer [replace]]
-   [website-helpers.utils :refer-macros [seconds-taken]]
+   [website-helpers.macros :refer-macros [seconds-taken]]
    [rid3.core :as rid3 :refer [rid3->]]))
 
 
