@@ -13,9 +13,7 @@
 
 (defn get-all-note-categories
   [notes]
-  (doto
-    (reduce union (map :categories notes))
-    prn))
+  (reduce union (map :categories notes)))
 
 ; Map of string to boolean
 (def category-selections
@@ -29,12 +27,7 @@
                                 (get-all-note-categories @notes)
                                 url-params)))
 
-; just do the category selection without redrawing the graph on first page load
-; in hopes of better performance
-(reset! category-selections (get-url-param-selections
-                              (get-all-note-categories @notes)
-                              url-params))
-
 (defn ^:export set-global-notes
   [new-notes]
-  (reset! notes new-notes))
+  (reset! notes new-notes)
+  (sync-category-selections!))
