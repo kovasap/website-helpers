@@ -1,12 +1,15 @@
 (ns website-helpers.page-graph
-  (:require
-    [clojure.set :refer [intersection]]
-    [website-helpers.graph :as g]
-    [website-helpers.notes :as n]
-    [website-helpers.global :as global] 
-    [website-helpers.utils :refer [seconds-taken get-selected-vars]]
-    [clojure.string :refer [split replace join capitalize]]
-    [reagent.core :as r]))
+  (:require [clojure.set :refer [intersection]]
+            [website-helpers.graph :as g]
+            [website-helpers.notes :as n]
+            [website-helpers.global :as global]
+            [website-helpers.utils
+             :refer-macros
+             [seconds-taken]
+             :refer
+             [get-selected-vars]]
+            [clojure.string :refer [split replace join capitalize]]
+            [reagent.core :as r]))
 
 (def PageTree
   [:map [:name :string]
