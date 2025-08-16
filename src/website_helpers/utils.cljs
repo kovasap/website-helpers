@@ -40,3 +40,13 @@
   (reset! url-params (parse-params))
   (into {} (for [var vars]
               [var (contains? @url-params var)])))
+
+(defmacro seconds-taken
+  [description expr]
+  `(let [start# (int (/ (js/Date.now) 1000))
+         ret#   ~expr]
+     (prn (str ~description
+               " in "
+               (- (int (/ (js/Date.now) 1000)) start#)
+               " secs"))
+     ret#))

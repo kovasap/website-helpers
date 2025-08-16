@@ -4,7 +4,7 @@
     [website-helpers.graph :as g]
     [website-helpers.notes :as n]
     [website-helpers.global :as global] 
-    [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
+    [website-helpers.utils :refer [seconds-taken get-selected-vars]]
     [clojure.string :refer [split replace join capitalize]]
     [reagent.core :as r]))
 
@@ -292,7 +292,7 @@
          :idx         4
          :group       3
          :size        10
-         :stroke-opacity-mod 1.0 
+         :stroke-opacity-mod 1.0
          :label       "legend"
          :opacity-mod 1}
         {:name        "Page (double-click to view)"
@@ -316,32 +316,36 @@
          :stroke-opacity-mod 0.5
          :opacity-mod 1
          :label       "legend"}]
-       (update-nodes
-         (concat idxed-notes (map category-to-node categories-to-idx))
-         prettify-name
-         fix-path
-         strip-extension
-         scale-size
-         assign-group
-         #(assign-opacity-mod % notes categories-to-highlight)
-         #(assign-stroke-opacity-mod % notes categories-to-highlight)
-         #(assoc % :label (first (:categories %)))
-         #(dissoc % :markdown)))
-     :links (concat ; TODO make only links from organize-notes-by-category
-                    ; appear if the number of links is overwhelming
-              (get-category-links idxed-notes idxed-categories)
-              ; All categories link to home
-              ; TODO make only categories from organize-notes-by-category
-              ; appear here
-              (for [[_ i] idxed-categories]
-                {:source 0 :target i :value 3})
-              ; setup LEGEND nodes
-              [; Do not connect the legend node to the center
-               ;{:source 0 :target 1 :value 11}
-               {:source 1 :target 2 :value 11}
-               {:source 2 :target 3 :value 11}
-               {:source 2 :target 4 :value 11}
-               {:source 2 :target 5 :value 11}])}))
+       (seconds-taken
+         (str "Updated " (count notes) " notes")
+         (update-nodes
+           (concat idxed-notes (map category-to-node categories-to-idx))
+           prettify-name
+           fix-path
+           strip-extension
+           scale-size
+           assign-group
+           #(assign-opacity-mod % notes categories-to-highlight)
+           #(assign-stroke-opacity-mod % notes categories-to-highlight)
+           #(assoc % :label (first (:categories %)))
+           #(dissoc % :markdown))))
+     :links 
+     (seconds-taken "Created links"
+       (concat ; TODO make only links from organize-notes-by-category
+                      ; appear if the number of links is overwhelming
+                (get-category-links idxed-notes idxed-categories)
+                ; All categories link to home
+                ; TODO make only categories from organize-notes-by-category
+                ; appear here
+                (for [[_ i] idxed-categories]
+                  {:source 0 :target i :value 3})
+                ; setup LEGEND nodes
+                [; Do not connect the legend node to the center
+                 ;{:source 0 :target 1 :value 11}
+                 {:source 1 :target 2 :value 11}
+                 {:source 2 :target 3 :value 11}
+                 {:source 2 :target 4 :value 11}
+                 {:source 2 :target 5 :value 11}]))}))
 
 (defn build-graph-data
   [show-unselected-nodes? notes-atom category-selections-atom]
@@ -369,8 +373,10 @@
           [g/viz
            ; (r/track build-graph-data global/notes
            ; global/category-selections)
-           (build-graph-data global/show-unselected-nodes-in-graph?
-                             global/notes
-                             global/category-selections)
+           (seconds-taken "Built graph data"
+                          (build-graph-data
+                            global/show-unselected-nodes-in-graph?
+                            global/notes
+                            global/category-selections))
            "https://kovasap.github.io/"
            (js->clj options :keywordize-keys true)]]))

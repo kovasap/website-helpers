@@ -6,6 +6,7 @@
   (:require
    [reagent.core :as r]
    [clojure.string :refer [replace]]
+   [website-helpers.utils :refer [seconds-taken]]
    [rid3.core :as rid3 :refer [rid3->]]))
 
 
@@ -129,7 +130,7 @@
   [graph-data base-link state-override-map]
   ; TODO make this width and height the size of the user's screen by
   ; default
-  (let [ratom (r/atom graph-data)
+  (let [ratom          (r/atom graph-data)
         viz-state      (atom (merge {:width          2000
                                      :height         1500
                                      :center-x       1000
@@ -161,7 +162,8 @@
                            sel
                            (.append "ellipse")
                            ; https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute
-                           ; is a good reference for different properties here.
+                           ; is a good reference for different properties
+                           ; here.
                            {:stroke       "#000"
                             ;#(group-color (.-group %))
                             :stroke-width 1.5
@@ -190,50 +192,52 @@
                                   :y           5}
                                  (.text #(.-name %))))]
     ;(fn [ratom]
-      [rid3/viz
-       {:id     "force-graph"
-        :ratom  ratom
-        :svg    {:did-mount  (fn [svg ratom]
-                               (let [{:keys [width height initial-alpha]}
-                                     @viz-state]
-                                 (rid3-> svg
-                                         {:width   width
-                                          :height  height
-                                          :viewBox #js [0 0 width height]})
-                                 (update-sim! sim initial-alpha @ratom)))
-                 :did-update (fn [svg ratom] (update-sim! sim 0.5 @ratom))}
-        :pieces [{:kind            :elem-with-data
-                  :class           "links"
-                  :tag             "line"
-                  :prepare-dataset (fn [ratom] (:links @ratom))
-                  :did-mount       (fn [sel _ratom]
-                                     (swap! viz-state assoc :links-sel sel)
-                                     (rid3-> sel
-                                             {:stroke         "#999"
-                                              :stroke-opacity 0.6
-                                              :stroke-width   #(-> (.-value %)
-                                                                   js/Math.sqrt
-                                                                   (/ 2))}))}
-                 {:kind            :elem-with-data
-                  :class           "nodes"
-                  :tag             "g"
-                  :prepare-dataset (fn [ratom] (:nodes @ratom))
-                  ; See
-                  ; https://github.com/kovasap/reddit-tree/blob/main/src/reddit_tree/graph.cljs
-                  ; for more possibilities here.
-                  :did-mount       (fn [sel _ratom]
-                                     (swap! viz-state assoc :nodes-sel sel)
-                                     ; Based on
-                                     ; https://stackoverflow.com/a/47401796
-                                     (add-circle sel)
-                                     (add-text sel)
-                                     (rid3-> sel
-                                             (.on "dblclick"
-                                                  (fn [_event node]
-                                                    (js/window.open
-                                                      (str base-link
-                                                           (replace (.-path
-                                                                      node)
-                                                                    #" "
-                                                                    "+")))))
-                                             (.call drag)))}]}]))
+    [rid3/viz
+     {:id     "force-graph"
+      :ratom  ratom
+      :svg    {:did-mount  (fn [svg ratom]
+                             (let [{:keys [width height initial-alpha]}
+                                   @viz-state]
+                               (rid3-> svg
+                                       {:width   width
+                                        :height  height
+                                        :viewBox #js [0 0 width height]})
+                               (update-sim! sim initial-alpha @ratom)))
+               :did-update (fn [svg ratom] (update-sim! sim 0.5 @ratom))}
+      :pieces [{:kind            :elem-with-data
+                :class           "links"
+                :tag             "line"
+                :prepare-dataset (fn [ratom] (:links @ratom))
+                :did-mount       (fn [sel _ratom]
+                                   (swap! viz-state assoc :links-sel sel)
+                                   (rid3-> sel
+                                           {:stroke         "#999"
+                                            :stroke-opacity 0.6
+                                            :stroke-width   #(-> (.-value %)
+                                                                 js/Math.sqrt
+                                                                 (/ 2))}))}
+               {:kind            :elem-with-data
+                :class           "nodes"
+                :tag             "g"
+                :prepare-dataset (fn [ratom] (:nodes @ratom))
+                ; See
+                ; https://github.com/kovasap/reddit-tree/blob/main/src/reddit_tree/graph.cljs
+                ; for more possibilities here.
+                :did-mount       (fn [sel _ratom]
+                                   (seconds-taken
+                                     "Mounted viz"
+                                     (do (swap! viz-state assoc :nodes-sel sel)
+                                         ; Based on
+                                         ; https://stackoverflow.com/a/47401796
+                                         (add-circle sel)
+                                         (add-text sel)
+                                         (rid3-> sel
+                                                 (.on "dblclick"
+                                                      (fn [_event node]
+                                                        (js/window.open
+                                                          (str base-link
+                                                               (replace
+                                                                 (.-path node)
+                                                                 #" "
+                                                                 "+")))))
+                                                 (.call drag)))))}]}]))
