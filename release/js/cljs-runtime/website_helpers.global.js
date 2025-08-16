@@ -4,10 +4,7 @@ website_helpers.global.graph_update_num = reagent.core.atom.cljs$core$IFn$_invok
 website_helpers.global.url_params = reagent.core.atom.cljs$core$IFn$_invoke$arity$1(cljs.core.PersistentArrayMap.EMPTY);
 website_helpers.global.notes = reagent.core.atom.cljs$core$IFn$_invoke$arity$1(website_helpers.test_data.notes);
 website_helpers.global.get_all_note_categories = (function website_helpers$global$get_all_note_categories(notes){
-var G__49248 = cljs.core.reduce.cljs$core$IFn$_invoke$arity$2(clojure.set.union,cljs.core.map.cljs$core$IFn$_invoke$arity$2(new cljs.core.Keyword(null,"categories","categories",178386610),notes));
-cljs.core.prn.cljs$core$IFn$_invoke$arity$variadic(cljs.core.prim_seq.cljs$core$IFn$_invoke$arity$2([G__49248], 0));
-
-return G__49248;
+return cljs.core.reduce.cljs$core$IFn$_invoke$arity$2(clojure.set.union,cljs.core.map.cljs$core$IFn$_invoke$arity$2(new cljs.core.Keyword(null,"categories","categories",178386610),notes));
 });
 website_helpers.global.category_selections = reagent.core.atom.cljs$core$IFn$_invoke$arity$1(cljs.core.PersistentArrayMap.EMPTY);
 website_helpers.global.sync_category_selections_BANG_ = (function website_helpers$global$sync_category_selections_BANG_(){
@@ -15,9 +12,10 @@ cljs.core.swap_BANG_.cljs$core$IFn$_invoke$arity$2(website_helpers.global.graph_
 
 return cljs.core.reset_BANG_(website_helpers.global.category_selections,website_helpers.utils.get_url_param_selections(website_helpers.global.get_all_note_categories(cljs.core.deref(website_helpers.global.notes)),website_helpers.global.url_params));
 });
-cljs.core.reset_BANG_(website_helpers.global.category_selections,website_helpers.utils.get_url_param_selections(website_helpers.global.get_all_note_categories(cljs.core.deref(website_helpers.global.notes)),website_helpers.global.url_params));
 website_helpers.global.set_global_notes = (function website_helpers$global$set_global_notes(new_notes){
-return cljs.core.reset_BANG_(website_helpers.global.notes,new_notes);
+cljs.core.reset_BANG_(website_helpers.global.notes,new_notes);
+
+return website_helpers.global.sync_category_selections_BANG_();
 });
 goog.exportSymbol('website_helpers.global.set_global_notes', website_helpers.global.set_global_notes);
 
