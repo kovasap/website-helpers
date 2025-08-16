@@ -64,7 +64,7 @@
       [:p "hi"]
       [page-graph-from-notes]
       [n/random-page]
-      [h/categories-and-backlinks "docs/visual-art/generative-art.md"]
+      [h/categories-and-backlinks "docs/visual-art/inspiration-and-resources.md"]
       [n/make-index-menu]]))
       ; [make-aggregated-items example-experiences]]))
 

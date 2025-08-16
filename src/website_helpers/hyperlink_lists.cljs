@@ -1,5 +1,5 @@
 (ns website-helpers.hyperlink-lists
-  (:require [clojure.string :refer [replace]]
+  (:require [clojure.string :refer [replace split capitalize]]
             [website-helpers.global :as global]
             [reagent.dom :as d]))
 
@@ -12,7 +12,12 @@
   [:a {:href (-> path
                  (replace "content/" "/")
                  (replace ".md" "/"))}
-    path])
+   (-> path
+       (split "/")
+       (last)
+       (replace ".md" "")
+       (replace "-" " ")
+       (capitalize))])
 
 (defn category-link
   [category]
