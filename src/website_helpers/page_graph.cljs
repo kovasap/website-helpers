@@ -147,18 +147,11 @@
 (def opacity-mod-min 0.5)
 (def opacity-mod-max 1.0)
 (defn assign-opacity-mod
-  [node all-notes categories-to-highlight]
+  [node earliest-mod-time latest-mod-time categories]
   (assoc node
     :opacity-mod
-    (let [node-mod-time     (apply max (:modification-unix-timestamps node))
-          earliest-mod-time (apply min
-                              (reduce concat
-                                (map :modification-unix-timestamps all-notes)))
-          latest-mod-time   (apply max
-                              (reduce concat
-                                (map :modification-unix-timestamps
-                                  all-notes)))]
-      (cond (= #{} (intersection categories-to-highlight (:categories node)))
+    (let [node-mod-time (apply max (:modification-unix-timestamps node))]
+      (cond (= #{} (intersection categories (:categories node)))
             (- opacity-mod-min 0.3)
             (nil? node-mod-time) opacity-mod-max
             (= earliest-mod-time latest-mod-time) opacity-mod-max
@@ -170,17 +163,11 @@
 (def stroke-opacity-mod-min 0.0)
 (def stroke-opacity-mod-max 1.0)
 (defn assign-stroke-opacity-mod
-  [node all-notes categories-to-highlight]
+  [node least-mod-num most-mod-num categories]
   (assoc node
     :stroke-opacity-mod
-    (let [node-mod-num  (count (:modification-unix-timestamps node))
-          least-mod-num (apply min
-                          (map #(count (:modification-unix-timestamps %))
-                            all-notes))
-          most-mod-num  (apply max
-                          (map #(count (:modification-unix-timestamps %))
-                            all-notes))]
-      (cond (= #{} (intersection categories-to-highlight (:categories node)))
+    (let [node-mod-num (count (:modification-unix-timestamps node))]
+      (cond (= #{} (intersection categories (:categories node)))
             stroke-opacity-mod-min
             (nil? node-mod-num) stroke-opacity-mod-min
             (= least-mod-num most-mod-num) stroke-opacity-mod-min
@@ -240,19 +227,29 @@
   [show-unselected-nodes? notes selected-categories all-categories]
   (let [starting-idx      8 ; leave room for HOME and LEGEND and
                             ; other legend nodes
-        categories-to-highlight (if (= 0 (count selected-categories))
-                                  all-categories
-                                  selected-categories)
+        categories        (if (= 0 (count selected-categories))
+                            all-categories
+                            selected-categories)
         notes             (if show-unselected-nodes?
                             notes
                             (n/get-notes-for-categories notes
                                                         selected-categories))
+        most-mod-num      (apply max
+                            (map #(count (:modification-unix-timestamps %))
+                              notes))
+        least-mod-num     (apply min
+                            (map #(count (:modification-unix-timestamps %))
+                              notes))
+        earliest-mod-time (apply min
+                            (reduce concat
+                              (map :modification-unix-timestamps notes)))
+        latest-mod-time   (apply max
+                            (reduce concat
+                              (map :modification-unix-timestamps notes)))
         idxed-notes       (map-indexed (fn [i n]
                                          (assoc n :idx (+ starting-idx i)))
                                        notes)
-        categories-to-idx (if show-unselected-nodes?
-                            all-categories
-                            categories-to-highlight)
+        categories-to-idx (if show-unselected-nodes? all-categories categories)
         idxed-categories  (assoc (index-categories categories-to-idx
                                                    (+ starting-idx
                                                       (count idxed-notes)))
@@ -325,27 +322,29 @@
            strip-extension
            scale-size
            assign-group
-           #(assign-opacity-mod % notes categories-to-highlight)
-           #(assign-stroke-opacity-mod % notes categories-to-highlight)
+           #(assign-opacity-mod % earliest-mod-time latest-mod-time categories)
+           #(assign-stroke-opacity-mod % least-mod-num most-mod-num categories)
            #(assoc % :label (first (:categories %)))
            #(dissoc % :markdown))))
-     :links 
-     (seconds-taken "Created links"
-       (concat ; TODO make only links from organize-notes-by-category
-                      ; appear if the number of links is overwhelming
-                (get-category-links idxed-notes idxed-categories)
-                ; All categories link to home
-                ; TODO make only categories from organize-notes-by-category
-                ; appear here
-                (for [[_ i] idxed-categories]
-                  {:source 0 :target i :value 3})
-                ; setup LEGEND nodes
-                [; Do not connect the legend node to the center
-                 ;{:source 0 :target 1 :value 11}
-                 {:source 1 :target 2 :value 11}
-                 {:source 2 :target 3 :value 11}
-                 {:source 2 :target 4 :value 11}
-                 {:source 2 :target 5 :value 11}]))}))
+     :links (seconds-taken "Created links"
+                           (concat ; TODO make only links from
+                                   ; organize-notes-by-category
+                             ; appear if the number of links is
+                             ; overwhelming
+                             (get-category-links idxed-notes idxed-categories)
+                             ; All categories link to home
+                             ; TODO make only categories from
+                             ; organize-notes-by-category appear here
+                             (for [[_ i] idxed-categories]
+                               {:source 0 :target i :value 3})
+                             ; setup LEGEND nodes
+                             [; Do not connect the legend node to the
+                              ; center
+                              ;{:source 0 :target 1 :value 11}
+                              {:source 1 :target 2 :value 11}
+                              {:source 2 :target 3 :value 11}
+                              {:source 2 :target 4 :value 11}
+                              {:source 2 :target 5 :value 11}]))}))
 
 (defn build-graph-data
   [show-unselected-nodes? notes-atom category-selections-atom]
