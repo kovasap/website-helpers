@@ -14,6 +14,10 @@
         (.. url -searchParams (delete var)))
       (.. js/window -history (pushState nil "" (.toString url))))))
 
+(def input-style
+  {:margin-right "7px"
+   :background-color "white"})
+
 (defn dropdown-check-list
   {:malli/schema [:=>
                   [:cat
@@ -34,6 +38,7 @@
                   (for [var (sort (keys @vars))]
                     [:li {:key var}
                      [:input {:type "checkbox"
+                              :style input-style
                               :checked (if (get @vars var) "checked" "")
                               :on-change
                               (fn [_]

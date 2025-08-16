@@ -22,7 +22,7 @@
 (defn link-list
   [title links link-fn]
   [:div
-   (str title ": ")
+   [:h3 (str title ": ")]
    [:br]
    (if (nil? links)
      ""

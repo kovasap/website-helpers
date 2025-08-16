@@ -1,6 +1,6 @@
 (ns website-helpers.notes
   (:require
-    [website-helpers.common-components :refer [dropdown-check-list]]
+    [website-helpers.common-components :refer [input-style dropdown-check-list]]
     [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
     [website-helpers.global :as global]
     [clojure.set :refer [union difference intersection subset?]]
@@ -246,6 +246,7 @@
            [:li {:key scheme}
             [:input {:type      "radio"
                      :name      "organization-scheme"
+                     :style     input-style
                      :checked   selected
                      :on-change (fn [_]
                                   (reset! organization-scheme
@@ -269,6 +270,7 @@
             [:div
              [:input {:type      "checkbox"
                       :name      "show-unselected-nodes-in-graph"
+                      :style     input-style
                       :checked   @global/show-unselected-nodes-in-graph?
                       :on-change (fn [_]
                                    (swap! global/graph-update-num inc)
