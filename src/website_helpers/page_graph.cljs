@@ -261,6 +261,7 @@
                              :tree-path ""
                              ; hack for group coloring
                              :children  [1 1]})]
+    ; (prn "making " (count notes) " nodes")
     {:nodes
      (concat
        [{:name "Home" :idx 0 :group 1 :size 20 :label "home" :opacity-mod 1}
@@ -313,51 +314,46 @@
          :stroke-opacity-mod 0.5
          :opacity-mod 1
          :label       "legend"}]
-       (seconds-taken
-         (str "Updated " (count notes) " notes")
-         (update-nodes
-           (concat idxed-notes (map category-to-node categories-to-idx))
-           prettify-name
-           fix-path
-           strip-extension
-           scale-size
-           assign-group
-           #(assign-opacity-mod % earliest-mod-time latest-mod-time categories)
-           #(assign-stroke-opacity-mod % least-mod-num most-mod-num categories)
-           #(assoc % :label (first (:categories %)))
-           #(dissoc % :markdown))))
-     :links (seconds-taken "Created links"
-                           (concat ; TODO make only links from
-                                   ; organize-notes-by-category
-                             ; appear if the number of links is
-                             ; overwhelming
-                             (get-category-links idxed-notes idxed-categories)
-                             ; All categories link to home
-                             ; TODO make only categories from
-                             ; organize-notes-by-category appear here
-                             (for [[_ i] idxed-categories]
-                               {:source 0 :target i :value 3})
-                             ; setup LEGEND nodes
-                             [; Do not connect the legend node to the
-                              ; center
-                              ;{:source 0 :target 1 :value 11}
-                              {:source 1 :target 2 :value 11}
-                              {:source 2 :target 3 :value 11}
-                              {:source 2 :target 4 :value 11}
-                              {:source 2 :target 5 :value 11}]))}))
+       (update-nodes
+         (concat idxed-notes (map category-to-node categories-to-idx))
+         prettify-name
+         fix-path
+         strip-extension
+         scale-size
+         assign-group
+         #(assign-opacity-mod % earliest-mod-time latest-mod-time categories)
+         #(assign-stroke-opacity-mod % least-mod-num most-mod-num categories)
+         #(assoc % :label (first (:categories %)))
+         #(dissoc % :markdown)))
+     :links (concat ; TODO make only links from
+                    ; organize-notes-by-category
+              ; appear if the number of links is
+              ; overwhelming
+              (get-category-links idxed-notes idxed-categories)
+              ; All categories link to home
+              ; TODO make only categories from
+              ; organize-notes-by-category appear here
+              (for [[_ i] idxed-categories]
+                {:source 0 :target i :value 3})
+              ; setup LEGEND nodes
+              [; Do not connect the legend node to the
+               ; center
+               ;{:source 0 :target 1 :value 11}
+               {:source 1 :target 2 :value 11}
+               {:source 2 :target 3 :value 11}
+               {:source 2 :target 4 :value 11}
+               {:source 2 :target 5 :value 11}])}))
 
 (defn build-graph-data
   [show-unselected-nodes? notes-atom category-selections-atom]
-  #_(doall (for [node (:nodes @app-state)]
-             (print (select-keys
-                      (js->clj node)
-                      [:last-modified-unix-timestamp :path :opacity-mod]))))
-  (-> (notes-to-graph @show-unselected-nodes?
-                      @notes-atom
-                      (get-selected-vars @category-selections-atom)
-                      (set (keys @category-selections-atom)))
-      (update :nodes clj->js)
-      (update :links clj->js)))
+  (seconds-taken "Built graph data"
+                 (-> (notes-to-graph @show-unselected-nodes?
+                                     @notes-atom
+                                     (get-selected-vars
+                                       @category-selections-atom)
+                                     (set (keys @category-selections-atom)))
+                     (update :nodes clj->js)
+                     (update :links clj->js))))
 
 (defn ^:export page-graph-from-notes
   [options]
@@ -372,10 +368,9 @@
           [g/viz
            ; (r/track build-graph-data global/notes
            ; global/category-selections)
-           (seconds-taken "Built graph data"
-                          (build-graph-data
-                            global/show-unselected-nodes-in-graph?
-                            global/notes
-                            global/category-selections))
+           (r/track build-graph-data
+                    global/show-unselected-nodes-in-graph?
+                    global/notes
+                    global/category-selections)
            "https://kovasap.github.io/"
            (js->clj options :keywordize-keys true)]]))

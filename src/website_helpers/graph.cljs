@@ -7,6 +7,7 @@
    [reagent.core :as r]
    [clojure.string :refer [replace]]
    [website-helpers.macros :refer-macros [seconds-taken]]
+   [website-helpers.global :as global]
    [rid3.core :as rid3 :refer [rid3->]]))
 
 
@@ -128,10 +129,12 @@
 
 (defn viz
   [graph-data base-link state-override-map]
+  ; (prn (str "rendering " (count (:nodes @graph-data)) " nodes"))
+  #_(doall (for [node (:nodes graph-data)]
+             (prn (select-keys (js->clj node :keywordize-keys true) [:name]))))
   ; TODO make this width and height the size of the user's screen by
   ; default
-  (let [ratom          (r/atom graph-data)
-        viz-state      (atom (merge {:width          2000
+  (let [viz-state      (atom (merge {:width          2000
                                      :height         1500
                                      :center-x       1000
                                      :center-y       750
@@ -139,10 +142,11 @@
                                      ; simulation.
                                      :initial-alpha  4
                                      :hover-text-sel nil
-                                     :links-sel      nil  ;#(not (= 11
-                                                          ;(.-value %)))
-                                     :nodes-sel      nil} ;#(not (= "legend"
-                                                          ;(.-label %)))}
+                                     :links-sel      nil ;#(not (= 11
+                                                         ;(.-value %)))
+                                     :nodes-sel      nil} ;#(not (=
+                                                          ;"legend"
+                                    ;(.-label %)))}
                                     state-override-map))
         sim            (create-sim viz-state)
         drag           (create-drag sim)
@@ -157,13 +161,14 @@
         group-color    (js/d3.scaleOrdinal
                          ["#ff7f00" "#377eb8" "#4daf4a" "#ffff00" "#984ea3"])
         category-color (js/d3.scaleOrdinal js/d3.schemeCategory10)
-        add-circle     (fn [sel]
+        add-circles    (fn [sel] (rid3-> sel (.append "ellipse")))
+        update-circles (fn [sel]
+                         ; https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute
+                         ; is a good reference for different properties
+                         ; here.
                          (rid3->
                            sel
-                           (.append "ellipse")
-                           ; https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute
-                           ; is a good reference for different properties
-                           ; here.
+                           (.selectAll "ellipse")
                            {:stroke       "#000"
                             ;#(group-color (.-group %))
                             :stroke-width 1.5
@@ -176,9 +181,12 @@
                             ; #(category-color (.-label %))
                             :fill-opacity #(* 0.6
                                               (:opacity-mod (get-clj %)))}))
+        remove-circles (fn [sel] (rid3-> sel (.selectAll "ellipse") (.remove)))
         add-text       (fn [sel]
+                         (rid3-> sel (.append "text") (.text #(.-name %))))
+        update-text    (fn [sel]
                          (rid3-> sel
-                                 (.append "text")
+                                 (.selectAll "text")
                                  {:text-anchor "middle"
                                   :opacity     #(* 1.0
                                                    (:opacity-mod (get-clj %)))
@@ -190,11 +198,11 @@
                                                   "bold"
                                                   "normal")
                                   :y           5}
-                                 (.text #(.-name %))))]
-    ;(fn [ratom]
+                                 (.text #(.-name %))))
+        remove-text    (fn [sel] (rid3-> sel (.selectAll "text") (.remove)))]
     [rid3/viz
      {:id     "force-graph"
-      :ratom  ratom
+      :ratom  graph-data
       :svg    {:did-mount  (fn [svg ratom]
                              (let [{:keys [width height initial-alpha]}
                                    @viz-state]
@@ -222,22 +230,25 @@
                 :prepare-dataset (fn [ratom] (:nodes @ratom))
                 ; See
                 ; https://github.com/kovasap/reddit-tree/blob/main/src/reddit_tree/graph.cljs
-                ; for more possibilities here.
+                ; for more possibilities here. By default just calls
+                ; did-mount
+                ; :did-update      (fn [sel _ratom])
                 :did-mount       (fn [sel _ratom]
-                                   (seconds-taken
-                                     "Mounted viz"
-                                     (do (swap! viz-state assoc :nodes-sel sel)
-                                         ; Based on
-                                         ; https://stackoverflow.com/a/47401796
-                                         (add-circle sel)
-                                         (add-text sel)
-                                         (rid3-> sel
-                                                 (.on "dblclick"
-                                                      (fn [_event node]
-                                                        (js/window.open
-                                                          (str base-link
-                                                               (replace
-                                                                 (.-path node)
-                                                                 #" "
-                                                                 "+")))))
-                                                 (.call drag)))))}]}]))
+                                   (swap! viz-state assoc :nodes-sel sel)
+                                   ; Based on
+                                   ; https://stackoverflow.com/a/47401796
+                                   (remove-text sel)
+                                   (remove-circles sel)
+                                   (add-circles sel)
+                                   (add-text sel)
+                                   (update-circles sel)
+                                   (update-text sel)
+                                   (rid3-> sel
+                                           (.on "dblclick"
+                                                (fn [_event node]
+                                                  (js/window.open
+                                                    (str base-link
+                                                         (replace (.-path node)
+                                                                  #" "
+                                                                  "+")))))
+                                           (.call drag)))}]}]))

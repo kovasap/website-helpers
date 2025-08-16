@@ -6,6 +6,7 @@
     ; note that we need to include everything here even if we aren't directly
     ; using it so that cljs includes it in the final build
     [website-helpers.graph]
+    [website-helpers.test-data]
     [website-helpers.global]
     [website-helpers.hyperlink-lists :as h]
     [website-helpers.notes :as n]
@@ -65,11 +66,14 @@
   (fn []
     [:div
       [:p "hi"]
-      [page-graph-from-notes]
+      [page-graph-from-notes {:center-x 300 :center-y 500}]
       [n/random-page]
       [h/categories-and-backlinks "docs/visual-art/inspiration-and-resources.md"]
       [n/make-index-menu]]))
       ; [make-aggregated-items example-experiences]]))
+
+(website-helpers.global/set-global-notes 
+  website-helpers.test-data/notes)
 
 ;; -------------------------
 ;; Initialize app
