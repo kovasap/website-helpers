@@ -240,7 +240,7 @@
 (defn organization-radios
   [organization-scheme]
   [:div
-   [:strong "Organize by..."]
+   [:h4 "Organize by:"]
    (into [:ul {:style {:list-style-type "none" :padding 0 :margin 0}}]
          (for [[scheme selected] @organization-scheme]
            [:li {:key scheme}
@@ -260,33 +260,49 @@
   []
   (let [organization-scheme (r/atom (set-one-to-true (keys
                                                        organization-schemes)
-                                                     :most-recently-changed))]
-    (fn [] [:div
-            [:div
-             [dropdown-check-list
-              global/category-selections
-              "Select Categories"
-              global/sync-category-selections!]]
-            [:div
-             [:input {:type      "checkbox"
-                      :name      "show-unselected-nodes-in-graph"
-                      :style     input-style
-                      :checked   @global/show-unselected-nodes-in-graph?
-                      :on-change (fn [_]
-                                   (swap! global/graph-update-num inc)
-                                   (swap!
-                                     global/show-unselected-nodes-in-graph?
-                                     not))}]
-             "Show unselected pages in graph?"]
-            [organization-radios organization-scheme]
-            (let [selected-organization-scheme
-                  (first (for [[scheme selected?] @organization-scheme
-                               :when selected?]
-                           scheme))]
-              (make-nested-note-list
-                @global/notes
-                (get-selected-vars @global/category-selections)
-                (selected-organization-scheme organization-schemes)))])))
+                                                     :category))]
+    (fn [] 
+      (let [notes @global/notes
+            cur-page-note (get-cur-page-note notes)]
+        [:div
+         [:h3 "Most recently modified:"]
+         (into [:div]
+               (map #(note-to-li % cur-page-note)
+                    (take 5
+                          (reverse
+                            (sort-by last-modification-time notes)))))
+         [:h3 "Most recently created:"]
+         (into [:div]
+               (map #(note-to-li % cur-page-note)
+                    (take 5
+                          (reverse
+                            (sort-by creation-time notes)))))
+         [:h3 "All:"]
+         [:div
+          [dropdown-check-list
+           global/category-selections
+           "Select Categories"
+           global/sync-category-selections!]]
+         [organization-radios organization-scheme]
+         [:div
+          [:input {:type      "checkbox"
+                   :name      "show-unselected-nodes-in-graph"
+                   :style     input-style
+                   :checked   @global/show-unselected-nodes-in-graph?
+                   :on-change (fn [_]
+                                (swap! global/graph-update-num inc)
+                                (swap!
+                                  global/show-unselected-nodes-in-graph?
+                                  not))}]
+          "Show unselected pages in graph?"]
+         (let [selected-organization-scheme
+               (first (for [[scheme selected?] @organization-scheme
+                            :when selected?]
+                        scheme))]
+           (make-nested-note-list
+             notes
+             (get-selected-vars @global/category-selections)
+             (selected-organization-scheme organization-schemes)))]))))
 
 
 (defn ^:export random-page
