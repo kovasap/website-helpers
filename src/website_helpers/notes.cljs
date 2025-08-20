@@ -236,7 +236,7 @@
                (for [k ks]
                  [k false]))
     k-to-true true))
-  
+
 (defn organization-radios
   [organization-scheme]
   [:div
@@ -255,6 +255,27 @@
                                                      scheme)))}]
             scheme]))])
 
+(defn in? 
+  "true if coll contains elm"
+  [coll elm]  
+  (some #(= elm %) coll))
+
+(defn most-recent-lists
+  [notes cur-page-note]
+  (let [recently-created-notes (take 5
+                                     (reverse (sort-by creation-time notes)))]
+    [:div
+     [:strong "Most recently created:"]
+     (into [:ul]
+           (map #(note-to-li % cur-page-note) recently-created-notes))
+     [:strong "Most recently modified:"]
+     (into [:ul]
+           (map #(note-to-li % cur-page-note)
+             (take 5
+                   (reverse (sort-by last-modification-time
+                                     (remove #(in? recently-created-notes %)
+                                       notes))))))]))
+
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   []
@@ -265,18 +286,7 @@
       (let [notes @global/notes
             cur-page-note (get-cur-page-note notes)]
         [:div
-         [:strong "Most recently modified:"]
-         (into [:div]
-               (map #(note-to-li % cur-page-note)
-                    (take 5
-                          (reverse
-                            (sort-by last-modification-time notes)))))
-         [:strong "Most recently created:"]
-         (into [:div]
-               (map #(note-to-li % cur-page-note)
-                    (take 5
-                          (reverse
-                            (sort-by creation-time notes)))))
+         (most-recent-lists notes cur-page-note)
          [:div
           [dropdown-check-list
            global/category-selections
