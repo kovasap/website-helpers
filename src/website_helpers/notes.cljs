@@ -240,7 +240,7 @@
 (defn organization-radios
   [organization-scheme]
   [:div
-   [:h4 "Organize by:"]
+   [:strong "Organize by:"]
    (into [:ul {:style {:list-style-type "none" :padding 0 :margin 0}}]
          (for [[scheme selected] @organization-scheme]
            [:li {:key scheme}
@@ -260,24 +260,23 @@
   []
   (let [organization-scheme (r/atom (set-one-to-true (keys
                                                        organization-schemes)
-                                                     :category))]
+                                                     :largest-category))]
     (fn [] 
       (let [notes @global/notes
             cur-page-note (get-cur-page-note notes)]
         [:div
-         [:h3 "Most recently modified:"]
+         [:strong "Most recently modified:"]
          (into [:div]
                (map #(note-to-li % cur-page-note)
                     (take 5
                           (reverse
                             (sort-by last-modification-time notes)))))
-         [:h3 "Most recently created:"]
+         [:strong "Most recently created:"]
          (into [:div]
                (map #(note-to-li % cur-page-note)
                     (take 5
                           (reverse
                             (sort-by creation-time notes)))))
-         [:h3 "All:"]
          [:div
           [dropdown-check-list
            global/category-selections
@@ -311,7 +310,7 @@
    (fn []
      (let [note (rand-nth notes)]
        [:p
-        "Random Page: "
+        [:strong "Random Page: "]
         (note->link note nil)
         [:span {:style {:font-size "70%"}}]
         " ("
