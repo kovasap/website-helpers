@@ -22,7 +22,7 @@
     (= 5 (.-group node))
     (= 6 (.-group node))))
 
-(def node-name-length-to-multiline 13)
+(def node-name-length-to-multiline 30) ; 13)
 (defn should-multiline-node?
   [node]
   (< node-name-length-to-multiline (count (.-name node))))
@@ -189,7 +189,9 @@
                                   :stroke-opacity #(:stroke-opacity-mod
                                                      (get-clj %))
                                   :rx #(* (if (is-branch-node? %) 1.3 1)
-                                          (+ 15 (* 2 (count (.-name %)))))
+                                          (if (should-multiline-node? %)
+                                            (+ 15 (* 2 (count (.-name %))))
+                                            (+ 15 (* 3 (count (.-name %))))))
                                   :ry #(* (if (is-branch-node? %) 1.3 1)
                                           (if (should-multiline-node? %)
                                             (max 25 (.-size %))

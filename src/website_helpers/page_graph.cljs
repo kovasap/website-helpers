@@ -153,6 +153,9 @@
     (let [node-mod-time (apply max (:modification-unix-timestamps node))]
       (cond (= #{} (intersection categories (:categories node)))
             (- opacity-mod-min 0.3)
+            (and (:is-category-node node)
+                 (not (contains? categories (:name node))))
+            (- opacity-mod-min 0.3)
             (nil? node-mod-time) opacity-mod-max
             (= earliest-mod-time latest-mod-time) opacity-mod-max
             :else (+ opacity-mod-min
@@ -265,6 +268,7 @@
                             {:name      c
                              :idx       (get idxed-categories c)
                              :path      (str "?" c "=true")
+                             :is-category-node true
                              :tree-path ""
                              ; hack for group coloring
                              :children  [1 1]})]
