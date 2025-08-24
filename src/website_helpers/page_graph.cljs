@@ -355,8 +355,8 @@
               ; All categories link to home
               ; TODO make only categories from organize-notes-by-category
               ; appear here
-              (for [[_ i] idxed-categories]
-                {:source 0 :target i :value 3})
+              #_(for [[_ i] idxed-categories]
+                  {:source 0 :target i :value 3})
               ; setup LEGEND nodes
               [; Do not connect the legend node to the center
                ;{:source 0 :target 1 :value 11}
