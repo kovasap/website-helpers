@@ -41,8 +41,8 @@
                   (.id #(.-index %))))
       (.force "charge"
               (-> (js/d3.forceManyBody)
-                  ; (.distanceMax 1000)
-                  (.strength -70)))
+                  (.distanceMax 800)
+                  (.strength -100)))
       (.force "center"
               (-> (js/d3.forceCenter center-x center-y)
                   (.strength 1.1)))
