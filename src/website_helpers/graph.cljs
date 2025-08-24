@@ -22,7 +22,7 @@
     (= 5 (.-group node))
     (= 6 (.-group node))))
 
-(def node-name-length-to-multiline 15)
+(def node-name-length-to-multiline 13)
 (defn should-multiline-node?
   [node]
   (< node-name-length-to-multiline (count (.-name node))))
@@ -37,7 +37,7 @@
       (.stop)
       (.force "link"
               (-> (js/d3.forceLink)
-                  (.strength 0.08)
+                  (.strength 0.06)
                   (.id #(.-index %))))
       (.force "charge"
               (-> (js/d3.forceManyBody)
@@ -57,10 +57,13 @@
                                        (not (= "legend" (.-label %))))
                                 0.02
                                 0))))
+      ; Ideally we would use https://github.com/adel-tahir/d3-ellipseCollide
+      ; here and forgo the multilining stuff that is being used to try to get
+      ; more circular nodes.
       (.force "collide"
               (-> (js/d3.forceCollide
                     #(* (if (is-distinguished-node? %) 1.2 1)
-                        (if (should-multiline-node? %) 60 35)))
+                        (if (should-multiline-node? %) 50 35)))
                   (.strength 1.1)))
       ; This keeps legend nodes above the chart to the side.
       (.force "legendx"
