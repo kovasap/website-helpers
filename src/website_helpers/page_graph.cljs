@@ -227,7 +227,11 @@
              [c (+ num-notes i)])))
 
 (defn notes-to-graph
-  [show-unselected-nodes? notes selected-categories all-categories]
+  [show-unselected-nodes?
+   include-home-node?
+   notes
+   selected-categories
+   all-categories]
   (let [starting-idx      9 ; leave room for HOME and LEGEND and
                             ; other legend nodes
         categories        (if (= 0 (count selected-categories))
@@ -264,17 +268,18 @@
                                                       (count idxed-notes)))
                             "HOME" 0)
         category-to-node  (fn [c]
-                            {:name      c
-                             :idx       (get idxed-categories c)
-                             :path      (str "?" c "=true")
+                            {:name             c
+                             :idx              (get idxed-categories c)
+                             :path             (str "?" c "=true")
                              :is-category-node true
-                             :tree-path ""
+                             :tree-path        ""
                              ; hack for group coloring
-                             :children  [1 1]})]
+                             :children         [1 1]})]
     ; (prn "making " (count notes) " nodes")
     ; (prn "The most modified page was changed " most-mod-num " times.")
     ; (prn "The least modified page was changed " least-mod-num " times.")
-    ; (prn "The page changed the earliest was changed at " earliest-mod-time)
+    ; (prn "The page changed the earliest was changed at "
+    ; earliest-mod-time)
     ; (prn "The page changed the latest was changed at " latest-mod-time)
     {:nodes
      (concat
@@ -353,10 +358,10 @@
               ; appear if the number of links is overwhelming
               (get-category-links idxed-notes idxed-categories)
               ; All categories link to home
-              ; TODO make only categories from organize-notes-by-category
-              ; appear here
-              #_(for [[_ i] idxed-categories]
+              (if include-home-node?
+                (for [[_ i] idxed-categories]
                   {:source 0 :target i :value 3})
+                [])
               ; setup LEGEND nodes
               [; Do not connect the legend node to the center
                ;{:source 0 :target 1 :value 11}
@@ -366,9 +371,10 @@
                {:source 2 :target 5 :value 11}])}))
 
 (defn build-graph-data
-  [show-unselected-nodes? notes-atom category-selections-atom]
+  [show-unselected-nodes? include-home-node? notes-atom category-selections-atom]
   ;(seconds-taken "Built graph data"
   (-> (notes-to-graph @show-unselected-nodes?
+                      @include-home-node?
                       @notes-atom
                       (get-selected-vars
                         @category-selections-atom)
@@ -391,6 +397,7 @@
            ; global/category-selections)
            (r/track build-graph-data
                     global/show-unselected-nodes-in-graph?
+                    global/include-home-node-in-graph?
                     global/notes
                     global/category-selections)
            "https://kovasap.github.io/"

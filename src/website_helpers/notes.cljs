@@ -377,6 +377,16 @@
                                 (swap! global/show-unselected-nodes-in-graph?
                                   not))}]
           "Show unselected pages in graph?"]
+         [:div
+          [:input {:type      "checkbox"
+                   :name      "include-home-node-in-graph"
+                   :style     input-style
+                   :checked   @global/include-home-node-in-graph?
+                   :on-change (fn [_]
+                                (swap! global/graph-update-num inc)
+                                (swap! global/include-home-node-in-graph?
+                                  not))}]
+          "Include home node in graph?"]
          (let [selected-organization-scheme (first (for [[scheme selected?]
                                                          @organization-scheme
                                                          :when selected?]

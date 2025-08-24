@@ -37,12 +37,12 @@
       (.stop)
       (.force "link"
               (-> (js/d3.forceLink)
-                  (.strength 0.10)
+                  (.strength 0.07)
                   (.id #(.-index %))))
       (.force "charge"
               (-> (js/d3.forceManyBody)
                   (.distanceMax 800)
-                  (.strength -100)))
+                  (.strength -80)))
       (.force "center"
               (-> (js/d3.forceCenter center-x center-y)
                   (.strength 1.1)))

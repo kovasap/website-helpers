@@ -6,6 +6,7 @@
     [website-helpers.utils :refer [get-url-param-selections]]))
 
 (def show-unselected-nodes-in-graph? (r/atom true))
+(def include-home-node-in-graph? (r/atom false))
 ; whenever this is updated, the page graph will be redrawn
 (def graph-update-num (r/atom 0))
 (def url-params (r/atom {}))
