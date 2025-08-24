@@ -125,7 +125,7 @@
   [nodes categories-to-idx]
   (reduce concat
           (for [node nodes]
-            (into [] (for [category (:categories node)
+            (into [] (for [category (:path-categories node)
                            :let [idx (get categories-to-idx category)]
                            :when idx]
                        {:source (:idx node)
