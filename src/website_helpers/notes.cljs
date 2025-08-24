@@ -27,6 +27,32 @@
    (ex-note "3" #{"c"})
    (ex-note "4" #{"a 1" "c"})])
 
+; ---------- Category Selection ---------------------------------------
+
+(defn sync-url-params!
+  {:malli/schema [:=> [:cat [:map-of :string :boolean]] :nil]}
+  [vars]
+  (let [url (js/URL. (. js/window -location))]
+    (doseq [[var value] vars]
+      (if value
+        (.. url -searchParams (set var value))
+        (.. url -searchParams (delete var)))
+      (.. js/window -history (pushState nil "" (.toString url))))))
+
+(defn select-category!
+  [category currently-selected?]
+  (prn "setting " category " to " currently-selected?)
+  (swap! global/category-selections assoc category (not currently-selected?))
+  (sync-url-params! @global/category-selections)
+  (global/sync-category-selections!))
+
+(defn toggle-category!
+  [category]
+  (prn "toggling " category)
+  (swap! global/category-selections update category not)
+  (sync-url-params! @global/category-selections)
+  (global/sync-category-selections!))
+
 ; ---------- Organizing Notes ----------------------------------------
 
 (defn get-notes-by-category
@@ -201,8 +227,8 @@
                        :open (or
                                ; Expand all menus for the current page.
                                (contains? (:categories cur-page) category)
-                               ; Expand all menus if there are few
-                               ; enough items
+                               ; Expand all menus if there are few enough
+                               ; items
                                (> 5
                                   (count (reduce concat
                                            (vals notes-by-category)))))}
@@ -210,10 +236,12 @@
               [:strong
                (capitalize category)
                " "
-               (if (contains? categories-with-recently-created-notes
-                              category) "+" "")
-               (if (contains? categories-with-recently-modified-notes
-                              category) "*" "")]]
+               (if (contains? categories-with-recently-created-notes category)
+                 "+"
+                 "")
+               (if (contains? categories-with-recently-modified-notes category)
+                 "*"
+                 "")]]
              (make-nested-note-html subtree cur-page recentcy-data)]]])))))
 
 ; -------------------------- Recency Logic --------------------------------
@@ -311,16 +339,6 @@
                                      (remove #(in? recently-created-notes %)
                                        notes))))))]))
 
-(defn sync-url-params!
-  {:malli/schema [:=> [:cat [:map-of :string :boolean]] :nil]}
-  [vars]
-  (let [url (js/URL. (. js/window -location))]
-    (doseq [[var value] vars]
-      (if value
-        (.. url -searchParams (set var value))
-        (.. url -searchParams (delete var)))
-      (.. js/window -history (pushState nil "" (.toString url))))))
-
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
   []
@@ -336,10 +354,7 @@
           [dropdown-select-list
            global/category-selections
            "Select Categories"
-           (fn [k v]
-             (swap! global/category-selections assoc k (not v))
-             (sync-url-params! @global/category-selections)
-             (global/sync-category-selections!))
+           select-category!
            "checkbox"]]
          [:div
           [dropdown-select-list
