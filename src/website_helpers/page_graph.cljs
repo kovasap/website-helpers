@@ -178,12 +178,13 @@
   
 
 (defn assign-group
-  [node]
+  [node most-recently-modified-paths most-recently-created-paths]
   (assoc node :group (cond
                        ; This is a special case we are overloading the "group"
                        ; concept for, since i couldn't figure out how to get a
                        ; new field through the clj->js conversion.
-                       (contains? (:categories node) "Recent") 4
+                       (contains? most-recently-modified-paths (:path node)) 4
+                       (contains? most-recently-created-paths (:path node)) 5
                        (contains? (:categories node) "Important") 5
                        ; A normal page
                        (or (nil? (:children node))
@@ -225,7 +226,7 @@
 
 (defn notes-to-graph
   [show-unselected-nodes? notes selected-categories all-categories]
-  (let [starting-idx      8 ; leave room for HOME and LEGEND and
+  (let [starting-idx      9 ; leave room for HOME and LEGEND and
                             ; other legend nodes
         categories        (if (= 0 (count selected-categories))
                             all-categories
@@ -241,11 +242,17 @@
                             (map #(count (:modification-unix-timestamps %))
                               notes))
         earliest-mod-time (apply min
-                            (reduce concat
-                              (map :modification-unix-timestamps notes)))
+                            (remove nil?
+                              (reduce concat
+                                (map :modification-unix-timestamps notes))))
         latest-mod-time   (apply max
-                            (reduce concat
-                              (map :modification-unix-timestamps notes)))
+                            (remove nil?
+                              (reduce concat
+                                (map :modification-unix-timestamps notes))))
+        most-recently-modified-paths
+        (set (map :path (n/get-recently-modified-notes notes)))
+        most-recently-created-paths
+        (set (map :path (n/get-recently-created-notes notes)))
         idxed-notes       (map-indexed (fn [i n]
                                          (assoc n :idx (+ starting-idx i)))
                                        notes)
@@ -262,6 +269,10 @@
                              ; hack for group coloring
                              :children  [1 1]})]
     ; (prn "making " (count notes) " nodes")
+    (prn "The most modified page was changed " most-mod-num " times.")
+    (prn "The least modified page was changed " least-mod-num " times.")
+    (prn "The page changed the earliest was changed at " earliest-mod-time)
+    (prn "The page changed the latest was changed at " latest-mod-time)
     {:nodes
      (concat
        [{:name "Home" :idx 0 :group 1 :size 20 :label "home" :opacity-mod 1}
@@ -300,16 +311,23 @@
          :label       "legend"
          :stroke-opacity-mod 0.5
          :opacity-mod 1}
-        {:name        "Recent Page (double-click to view)"
+        {:name        "Recently Modified Page (double-click to view)"
          :idx         6
          :group       4
          :size        20
          :label       "legend"
          :stroke-opacity-mod 0.5
          :opacity-mod 1}
+        {:name        "Recently Added Page (double-click to view)"
+         :idx         6
+         :group       5
+         :size        20
+         :label       "legend"
+         :stroke-opacity-mod 0.5
+         :opacity-mod 1}
         {:name        "Important Page (double-click to view)"
          :idx         7
-         :group       5
+         :group       6
          :size        20
          :stroke-opacity-mod 0.5
          :opacity-mod 1
@@ -320,24 +338,24 @@
          fix-path
          strip-extension
          scale-size
-         assign-group
+         #(assign-group %
+                        most-recently-modified-paths
+                        most-recently-created-paths)
          #(assign-opacity-mod % earliest-mod-time latest-mod-time categories)
          #(assign-stroke-opacity-mod % least-mod-num most-mod-num categories)
          #(assoc % :label (first (:categories %)))
          #(dissoc % :markdown)))
      :links (concat ; TODO make only links from
                     ; organize-notes-by-category
-              ; appear if the number of links is
-              ; overwhelming
+              ; appear if the number of links is overwhelming
               (get-category-links idxed-notes idxed-categories)
               ; All categories link to home
-              ; TODO make only categories from
-              ; organize-notes-by-category appear here
+              ; TODO make only categories from organize-notes-by-category
+              ; appear here
               (for [[_ i] idxed-categories]
                 {:source 0 :target i :value 3})
               ; setup LEGEND nodes
-              [; Do not connect the legend node to the
-               ; center
+              [; Do not connect the legend node to the center
                ;{:source 0 :target 1 :value 11}
                {:source 1 :target 2 :value 11}
                {:source 2 :target 3 :value 11}

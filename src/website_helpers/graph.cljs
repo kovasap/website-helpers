@@ -5,7 +5,7 @@
 (ns website-helpers.graph 
   (:require
    [reagent.core :as r]
-   [clojure.string :refer [replace]]
+   [clojure.string :refer [replace split join]]
    [website-helpers.macros :refer-macros [seconds-taken]]
    [website-helpers.global :as global]
    [rid3.core :as rid3 :refer [rid3->]]))
@@ -19,7 +19,13 @@
   [node]
   (or
     (= 4 (.-group node))
-    (= 5 (.-group node))))
+    (= 5 (.-group node))
+    (= 6 (.-group node))))
+
+(def node-name-length-to-multiline 15)
+(defn should-multiline-node?
+  [node]
+  (< node-name-length-to-multiline (count (.-name node))))
 
 ; The docs at https://d3js.org/d3-force/simulation are helpful for tuning
 ; these
@@ -52,7 +58,9 @@
                                 0.02
                                 0))))
       (.force "collide"
-              (-> (js/d3.forceCollide #(if (is-distinguished-node? %) 70 35))
+              (-> (js/d3.forceCollide
+                    #(* (if (is-distinguished-node? %) 1.2 1)
+                        (if (should-multiline-node? %) 60 35)))
                   (.strength 1.1)))
       ; This keeps legend nodes above the chart to the side.
       (.force "legendx"
@@ -158,32 +166,61 @@
         ;; will return the same color for repeated values).  See
         ;; https://observablehq.com/@d3/d3-scaleordinal.
         ; grey "#808080"
-        group-color    (js/d3.scaleOrdinal
-                         ["#ff7f00" "#377eb8" "#4daf4a" "#ffff00" "#984ea3"])
+        group-color    (js/d3.scaleOrdinal ["#ffffff"
+                                            "#377eb8"
+                                            "#4daf4a"
+                                            "#ffff00"
+                                            "#ff7f00"
+                                            "#984ea3"])
         category-color (js/d3.scaleOrdinal js/d3.schemeCategory10)
         add-circles    (fn [sel] (rid3-> sel (.append "ellipse")))
         update-circles (fn [sel]
                          ; https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute
                          ; is a good reference for different properties
                          ; here.
-                         (rid3->
-                           sel
-                           (.selectAll "ellipse")
-                           {:stroke       "#000"
-                            ;#(group-color (.-group %))
-                            :stroke-width 1.5
-                            :stroke-opacity #(:stroke-opacity-mod (get-clj %))
-                            :rx           #(* (if (is-branch-node? %) 1.3 1)
-                                              (+ 15 (* 3 (count (.-name %)))))
-                            :ry           #(* (if (is-branch-node? %) 1.3 1)
-                                              (/ (max 25 (.-size %)) 1.8))
-                            :fill         #(group-color (.-group %))
-                            ; #(category-color (.-label %))
-                            :fill-opacity #(* 0.6
-                                              (:opacity-mod (get-clj %)))}))
+                         (rid3-> sel
+                                 (.selectAll "ellipse")
+                                 {:stroke "#000"
+                                  ;#(group-color (.-group %))
+                                  :stroke-width 1.5
+                                  :stroke-opacity #(:stroke-opacity-mod
+                                                     (get-clj %))
+                                  :rx #(* (if (is-branch-node? %) 1.3 1)
+                                          (+ 15 (* 2 (count (.-name %)))))
+                                  :ry #(* (if (is-branch-node? %) 1.3 1)
+                                          (if (should-multiline-node? %)
+                                            (max 25 (.-size %))
+                                            (/ (max 25 (.-size %)) 1.8)))
+                                  :fill #(group-color (.-group %))
+                                  ; #(category-color (.-label %))
+                                  :fill-opacity
+                                  #(* 0.6 (:opacity-mod (get-clj %)))}))
         remove-circles (fn [sel] (rid3-> sel (.selectAll "ellipse") (.remove)))
         add-text       (fn [sel]
-                         (rid3-> sel (.append "text") (.text #(.-name %))))
+                         (let [text-sel (.append sel "text")]
+                           (rid3-> text-sel
+                                   (.filter should-multiline-node?)
+                                   (.append "tspan")
+                                   {:x "0" :dy "-0.7em"}
+                                   (.text (fn [node]
+                                            (let [words (split (.-name node)
+                                                               #"\s")]
+                                              (join " "
+                                                    (take (/ (count words) 2)
+                                                          words))))))
+                           (rid3-> text-sel
+                                   (.filter should-multiline-node?)
+                                   (.append "tspan")
+                                   {:x "0" :dy "1.4em"}
+                                   (.text (fn [node]
+                                            (let [words (split (.-name node)
+                                                               #"\s")]
+                                              (join " "
+                                                    (drop (/ (count words) 2)
+                                                          words))))))
+                           (rid3-> text-sel
+                                   (.filter #(not (should-multiline-node? %)))
+                                   (.text #(.-name %)))))
         update-text    (fn [sel]
                          (rid3-> sel
                                  (.selectAll "text")
@@ -193,12 +230,13 @@
                                   :font-size   #(if (is-branch-node? %)
                                                   "med"
                                                   "small")
-                                  :font-weight #(if (or (= 4 (.-group %))
-                                                        (= 5 (.-group %)))
-                                                  "bold"
-                                                  "normal")
-                                  :y           5}
-                                 (.text #(.-name %))))
+                                  ; :font-weight #(if (or (= 4 (.-group
+                                  ; %))
+                                  ;                       (= 5 (.-group
+                                  ;                       %))
+                                  ;                 "bold"
+                                  ;                 "normal")
+                                  :y           5}))
         remove-text    (fn [sel] (rid3-> sel (.selectAll "text") (.remove)))]
     [rid3/viz
      {:id     "force-graph"
