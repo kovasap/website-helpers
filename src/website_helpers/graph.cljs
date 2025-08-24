@@ -37,7 +37,7 @@
       (.stop)
       (.force "link"
               (-> (js/d3.forceLink)
-                  (.strength 0.06)
+                  (.strength 0.07)
                   (.id #(.-index %))))
       (.force "charge"
               (-> (js/d3.forceManyBody)
