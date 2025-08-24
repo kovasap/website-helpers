@@ -124,13 +124,12 @@
 (defn get-category-links
   [nodes categories-to-idx]
   (reduce concat
-          (for [node nodes]
-            (into [] (for [category (first (sort (:path-categories node)))
-                           :let [idx (get categories-to-idx category)]
-                           :when idx]
-                       {:source (:idx node)
-                        :target idx
-                        :value 3})))))
+    (for [node nodes]
+      (into []
+            (for [category [(first (sort (:path-categories node)))]
+                  :let     [idx (get categories-to-idx category)]
+                  :when    idx]
+              {:source (:idx node) :target idx :value 3})))))
 
 (defn update-nodes
   [nodes & update-fns]
@@ -273,10 +272,10 @@
                              ; hack for group coloring
                              :children  [1 1]})]
     ; (prn "making " (count notes) " nodes")
-    (prn "The most modified page was changed " most-mod-num " times.")
-    (prn "The least modified page was changed " least-mod-num " times.")
-    (prn "The page changed the earliest was changed at " earliest-mod-time)
-    (prn "The page changed the latest was changed at " latest-mod-time)
+    ; (prn "The most modified page was changed " most-mod-num " times.")
+    ; (prn "The least modified page was changed " least-mod-num " times.")
+    ; (prn "The page changed the earliest was changed at " earliest-mod-time)
+    ; (prn "The page changed the latest was changed at " latest-mod-time)
     {:nodes
      (concat
        [{:name "Home" :idx 0 :group 1 :size 20 :label "home" :opacity-mod 1}
@@ -368,14 +367,14 @@
 
 (defn build-graph-data
   [show-unselected-nodes? notes-atom category-selections-atom]
-  (seconds-taken "Built graph data"
-                 (-> (notes-to-graph @show-unselected-nodes?
-                                     @notes-atom
-                                     (get-selected-vars
-                                       @category-selections-atom)
-                                     (set (keys @category-selections-atom)))
-                     (update :nodes clj->js)
-                     (update :links clj->js))))
+  ;(seconds-taken "Built graph data"
+  (-> (notes-to-graph @show-unselected-nodes?
+                      @notes-atom
+                      (get-selected-vars
+                        @category-selections-atom)
+                      (set (keys @category-selections-atom)))
+      (update :nodes clj->js)
+      (update :links clj->js)))
 
 (defn ^:export page-graph-from-notes
   [options]
