@@ -1,7 +1,9 @@
 (ns website-helpers.notes
   (:require
-    [website-helpers.common-components :refer [input-style dropdown-check-list]]
-    [website-helpers.utils :refer [get-url-param-selections get-selected-vars]]
+    [website-helpers.common-components
+     :refer
+     [input-style dropdown-select-list]]
+    [website-helpers.utils :refer [get-selected-vars]]
     [website-helpers.global :as global]
     [clojure.set :refer [union difference intersection subset?]]
     [clojure.string :refer [capitalize replace replace-first join]]
@@ -148,18 +150,21 @@
 
 
 (defn note->link
-  [note cur-page-note]
+  [note cur-page-note {:keys [recently-created-notes recently-modified-notes]}]
   [:a
    (let [attrs {:href (path->url (:path note))}]
      (if (= cur-page-note note)
        (assoc attrs :style {:font-style "italic"})
        attrs))
-   (:title note)])
+   (:title note)
+   " "
+   (if (contains? recently-created-notes note) "+" "")
+   (if (contains? recently-modified-notes note) "*" "")])
 
 (defn note-to-li
-  [note cur-page-note]
+  [note cur-page-note recentcy-data]
   [:li {:key (:path note)}
-   (note->link note cur-page-note)])
+   (note->link note cur-page-note recentcy-data)])
 
 
 (defn get-cur-page-note
@@ -169,36 +174,88 @@
 
 
 (defn make-nested-note-html
-  [notes-by-category cur-page]
-  (into [:ul]
-        (reduce concat
-          (for [[category subtree] (sort-by
-                                     #(let [k (first %)]
-                                        (cond (not (nil? (month->timestamp k)))
-                                              (- (month->timestamp k))
-                                              (string? k)  k
-                                              (int? k)     (- k)
-                                              (keyword? k) (name k)
-                                              (nil? k)     (- 1000)
-                                              :else        (doto k prn)))
-                                     notes-by-category)]
-            (if (= category :notes)
-              (into []
-                    (for [note subtree]
-                      (note-to-li note cur-page)))
-              [[:li {:key category}
-                [:details {:id   category
-                           :open (or
-                                   ; Expand all menus for the current
-                                   ; page.
-                                   (contains? (:categories cur-page) category)
-                                   ; Expand all menus if there are few
-                                   ; enough items
-                                   (> 5
-                                      (count (reduce concat
-                                               (vals notes-by-category)))))}
-                 [:summary [:strong (capitalize category)]]
-                 (make-nested-note-html subtree cur-page)]]])))))
+  [notes-by-category
+   cur-page
+   {:keys [categories-with-recently-modified-notes
+           categories-with-recently-created-notes]
+    :as   recentcy-data}]
+  (into
+    [:ul]
+    (reduce concat
+      (for [[category subtree] (sort-by #(let [k (first %)]
+                                           (cond (not (nil? (month->timestamp
+                                                              k)))
+                                                 (- (month->timestamp k))
+                                                 (string? k) k
+                                                 (int? k) (- k)
+                                                 (keyword? k) (name k)
+                                                 (nil? k) (- 1000)
+                                                 :else (doto k prn)))
+                                        notes-by-category)]
+        (if (= category :notes)
+          (into []
+                (for [note subtree]
+                  (note-to-li note cur-page recentcy-data)))
+          [[:li {:key category}
+            [:details {:id   category
+                       :open (or
+                               ; Expand all menus for the current page.
+                               (contains? (:categories cur-page) category)
+                               ; Expand all menus if there are few
+                               ; enough items
+                               (> 5
+                                  (count (reduce concat
+                                           (vals notes-by-category)))))}
+             [:summary
+              [:strong
+               (capitalize category)
+               " "
+               (if (contains? categories-with-recently-created-notes
+                              category) "+" "")
+               (if (contains? categories-with-recently-modified-notes
+                              category) "*" "")]]
+             (make-nested-note-html subtree cur-page recentcy-data)]]])))))
+
+; -------------------------- Recency Logic --------------------------------
+
+(def num-recently-modified-notes-to-highlight 10)
+(def num-recently-created-notes-to-highlight 5)
+
+(defn in? 
+  "true if coll contains elm"
+  [coll elm]  
+  (some #(= elm %) coll))
+
+(defn get-recently-created-notes
+  [notes]
+  (set (take num-recently-created-notes-to-highlight
+             (reverse (sort-by creation-time notes)))))
+
+(defn get-categories-with-recently-created-notes
+  [notes]
+  (apply union (map :categories (get-recently-created-notes notes))))
+    
+
+(defn get-recently-modified-notes
+  [notes]
+  (let [recently-created-notes (get-recently-created-notes notes)]
+    (set (take num-recently-modified-notes-to-highlight
+               (reverse (sort-by last-modification-time
+                                 (remove #(in? recently-created-notes %)
+                                   notes)))))))
+
+(defn get-categories-with-recently-modified-notes
+  [notes]
+  (apply union (map :categories (get-recently-modified-notes notes))))
+
+(defn get-recentcy-data
+  [notes]
+  {:recently-modified-notes (get-recently-modified-notes notes)
+   :recently-created-notes (get-recently-created-notes notes)
+   :categories-with-recently-created-notes
+   (get-categories-with-recently-created-notes notes)
+   :categories-with-recently-modified-notes
+   (get-categories-with-recently-modified-notes notes)})
 
 ; -------------------------------------------------------------------------
 
@@ -218,7 +275,8 @@
   [notes selected-categories organization-fn]
   (make-nested-note-html
     (organization-fn (get-notes-for-categories notes selected-categories))
-    (get-cur-page-note notes)))
+    (get-cur-page-note notes)
+    (get-recentcy-data notes)))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.)
@@ -237,29 +295,6 @@
                  [k false]))
     k-to-true true))
 
-(defn organization-radios
-  [organization-scheme]
-  [:div
-   [:strong "Organize by:"]
-   (into [:ul {:style {:list-style-type "none" :padding 0 :margin 0}}]
-         (for [[scheme selected] @organization-scheme]
-           [:li {:key scheme}
-            [:input {:type      "radio"
-                     :name      "organization-scheme"
-                     :style     input-style
-                     :checked   selected
-                     :on-change (fn [_]
-                                  (reset! organization-scheme
-                                    (set-one-to-true (keys
-                                                       organization-schemes)
-                                                     scheme)))}]
-            scheme]))])
-
-(defn in? 
-  "true if coll contains elm"
-  [coll elm]  
-  (some #(= elm %) coll))
-
 (defn most-recent-lists
   [notes cur-page-note]
   (let [recently-created-notes (take 5
@@ -267,14 +302,24 @@
     [:div
      [:strong "Most recently created:"]
      (into [:ul]
-           (map #(note-to-li % cur-page-note) recently-created-notes))
+           (map #(note-to-li % cur-page-note {}) recently-created-notes))
      [:strong "Most recently modified:"]
      (into [:ul]
-           (map #(note-to-li % cur-page-note)
+           (map #(note-to-li % cur-page-note {})
              (take 5
                    (reverse (sort-by last-modification-time
                                      (remove #(in? recently-created-notes %)
                                        notes))))))]))
+
+(defn sync-url-params!
+  {:malli/schema [:=> [:cat [:map-of :string :boolean]] :nil]}
+  [vars]
+  (let [url (js/URL. (. js/window -location))]
+    (doseq [[var value] vars]
+      (if value
+        (.. url -searchParams (set var value))
+        (.. url -searchParams (delete var)))
+      (.. js/window -history (pushState nil "" (.toString url))))))
 
 (defn ^:export make-index-menu
   ; {:malli/schema [:=> [:cat [:sequential Note] ReagentComponent]]}
@@ -282,17 +327,31 @@
   (let [organization-scheme (r/atom (set-one-to-true (keys
                                                        organization-schemes)
                                                      :largest-category))]
-    (fn [] 
-      (let [notes @global/notes
+    (fn []
+      (let [notes         @global/notes
             cur-page-note (get-cur-page-note notes)]
         [:div
-         (most-recent-lists notes cur-page-note)
+         ; (most-recent-lists notes cur-page-note)
          [:div
-          [dropdown-check-list
+          [dropdown-select-list
            global/category-selections
            "Select Categories"
-           global/sync-category-selections!]]
-         [organization-radios organization-scheme]
+           (fn [k v]
+             (swap! global/category-selections assoc k (not v))
+             (sync-url-params! @global/category-selections)
+             (global/sync-category-selections!))
+           "checkbox"]]
+         [:div
+          [dropdown-select-list
+           organization-scheme
+           ; Title of dropdown is selected value
+           (str "Organize by "
+                (name (some (fn [[k v]] (if v k nil)) @organization-scheme)))
+           (fn [k _v]
+             (reset! organization-scheme (set-one-to-true
+                                           (keys organization-schemes)
+                                           k)))
+           "radio"]]
          [:div
           [:input {:type      "checkbox"
                    :name      "show-unselected-nodes-in-graph"
@@ -300,18 +359,24 @@
                    :checked   @global/show-unselected-nodes-in-graph?
                    :on-change (fn [_]
                                 (swap! global/graph-update-num inc)
-                                (swap!
-                                  global/show-unselected-nodes-in-graph?
+                                (swap! global/show-unselected-nodes-in-graph?
                                   not))}]
           "Show unselected pages in graph?"]
-         (let [selected-organization-scheme
-               (first (for [[scheme selected?] @organization-scheme
-                            :when selected?]
-                        scheme))]
+         (let [selected-organization-scheme (first (for [[scheme selected?]
+                                                         @organization-scheme
+                                                         :when selected?]
+                                                     scheme))]
            (make-nested-note-list
              notes
              (get-selected-vars @global/category-selections)
-             (selected-organization-scheme organization-schemes)))]))))
+             (selected-organization-scheme organization-schemes)))
+         [:div
+          [:small
+           [:em
+            "Sections/pages with * indicate they contain recent modifications."]]]
+         [:div
+          [:small
+           [:em "Sections/pages with + indicate recent page additions."]]]]))))
 
 
 (defn ^:export random-page
@@ -321,7 +386,7 @@
      (let [note (rand-nth notes)]
        [:p
         [:strong "Random Page: "]
-        (note->link note nil)
+        (note->link note nil {})
         [:span {:style {:font-size "70%"}}]
         " ("
         (join ", " (:categories note))

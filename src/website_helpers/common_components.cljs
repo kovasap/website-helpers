@@ -4,29 +4,22 @@
     [website-helpers.global :as global]
     [reagent.core :as r]))
 
-(defn sync-url-params!
-  {:malli/schema [:=> [:cat [:map-of :string :boolean]] :nil]}
-  [vars]
-  (let [url (js/URL. (. js/window -location))]
-    (doseq [[var value] vars]
-      (if value
-        (.. url -searchParams (set var value))
-        (.. url -searchParams (delete var)))
-      (.. js/window -history (pushState nil "" (.toString url))))))
 
 (def input-style
   {:margin-right "7px"
    :background-color "white"})
 
-(defn dropdown-check-list
+(defn dropdown-select-list
   {:malli/schema [:=>
                   [:cat
-                   :any ; Actually an atom containing [:map-of :string
+                   :any ; Actually an atom containing [:map-of [:or
+                        ; :string :keyword]
                         ; :boolean]
                    :string
-                   [:=> [:cat] :nil]]
+                   [:=> [:cat] :nil]
+                   :string]
                   ReagentComponent]}
-  [vars title on-change]
+  [vars title on-change input-type]
   (let [opened (r/atom false)]
     (fn [] [:div {:id       "tag-list"
                   :class    ["dropdown-check-list" (if @opened "visible" nil)]
@@ -35,14 +28,10 @@
             [:span {:class "anchor" :on-click #(reset! opened (not @opened))}
              title]
             (into [:ul {:class "items"}]
-                  (for [var (sort (keys @vars))]
-                    [:li {:key var}
-                     [:input {:type "checkbox"
-                              :style input-style
-                              :checked (if (get @vars var) "checked" "")
-                              :on-change
-                              (fn [_]
-                                (swap! vars assoc var (not (get @vars var)))
-                                (sync-url-params! @vars)
-                                (on-change))}]
-                     var]))])))
+                  (for [[k v] (sort-by (fn [[k _v]] k) @vars)]
+                    [:li {:key k}
+                     [:input {:type      input-type
+                              :style     input-style
+                              :checked   (if v "checked" "")
+                              :on-change (fn [_] (on-change k v))}]
+                     k]))])))

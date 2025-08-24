@@ -1,6 +1,6 @@
 (ns website-helpers.filterable-items
   (:require
-    [website-helpers.common-components :refer [dropdown-check-list]]
+    [website-helpers.common-components :refer [dropdown-select-list]]
     [website-helpers.utils :refer [get-url-param-selections get-selected-vars
                                    my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
@@ -628,7 +628,7 @@ advantage."
       ; See https://github.com/reagent-project/reagent/issues/18
       (into [:div
              [:h2 data-name]
-             [:div [dropdown-check-list tag-selections "Select Tags" #()]]] 
+             [:div [dropdown-select-list tag-selections "Select Tags" #()]]] 
             (for [[item-name {:keys [details tags children]}]
                   (sort-by-tags data-map)
                   :let [selected-tags (get-selected-vars @tag-selections)
