@@ -98,13 +98,13 @@
   ([notes] (get-notes-by-largest-category notes #{}))
   ([notes categories-to-ignore]
    (if (or (nil? notes) (<= (count notes) 1))
-     {:notes notes}
+     {:notes (sort-by :name notes)}
      (let [[largest-category largest-notes]
            (get-largest-category notes categories-to-ignore)
            other-notes (difference notes largest-notes)]
        ; I don't really understand why this if works
        (if (nil? largest-notes)
-         {:notes notes}
+         {:notes (sort-by :name notes)}
          (merge
            {largest-category (get-notes-by-largest-category
                                largest-notes (conj categories-to-ignore
@@ -246,8 +246,8 @@
 
 ; -------------------------- Recency Logic --------------------------------
 
-(def num-recently-modified-notes-to-highlight 10)
-(def num-recently-created-notes-to-highlight 5)
+(def num-recently-modified-notes-to-highlight 20)
+(def num-recently-created-notes-to-highlight 10)
 
 (defn in? 
   "true if coll contains elm"

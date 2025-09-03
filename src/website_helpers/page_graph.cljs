@@ -247,6 +247,7 @@
         least-mod-num     (apply min
                             (map #(count (:modification-unix-timestamps %))
                               notes))
+        ; TODO remove really old stuff here
         earliest-mod-time (apply min
                             (remove nil?
                               (reduce concat
