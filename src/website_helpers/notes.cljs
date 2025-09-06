@@ -246,44 +246,65 @@
 
 ; -------------------------- Recency Logic --------------------------------
 
-(def num-recently-modified-notes-to-highlight 20)
-(def num-recently-created-notes-to-highlight 10)
-
 (defn in? 
   "true if coll contains elm"
   [coll elm]  
   (some #(= elm %) coll))
 
 (defn get-recently-created-notes
-  [notes]
+  [notes num-recently-created-notes-to-highlight]
   (set (take num-recently-created-notes-to-highlight
              (reverse (sort-by creation-time notes)))))
 
 (defn get-categories-with-recently-created-notes
-  [notes]
-  (apply union (map :categories (get-recently-created-notes notes))))
+  [notes num-recently-created-notes-to-highlight]
+  (apply union
+    (map :categories
+      (get-recently-created-notes notes
+                                  num-recently-created-notes-to-highlight))))
     
 
 (defn get-recently-modified-notes
-  [notes]
-  (let [recently-created-notes (get-recently-created-notes notes)]
+  [notes
+   num-recently-modified-notes-to-highlight
+   num-recently-created-notes-to-highlight]
+  (let [recently-created-notes (get-recently-created-notes
+                                 notes
+                                 num-recently-created-notes-to-highlight)]
     (set (take num-recently-modified-notes-to-highlight
                (reverse (sort-by last-modification-time
                                  (remove #(in? recently-created-notes %)
                                    notes)))))))
 
 (defn get-categories-with-recently-modified-notes
-  [notes]
-  (apply union (map :categories (get-recently-modified-notes notes))))
+  [notes
+   num-recently-modified-notes-to-highlight
+   num-recently-created-notes-to-highlight]
+  (apply union
+    (map :categories
+      (get-recently-modified-notes notes
+                                   num-recently-modified-notes-to-highlight
+                                   num-recently-created-notes-to-highlight))))
 
 (defn get-recentcy-data
-  [notes]
-  {:recently-modified-notes (get-recently-modified-notes notes)
-   :recently-created-notes (get-recently-created-notes notes)
+  [notes
+   num-recently-modified-notes-to-highlight
+   num-recently-created-notes-to-highlight]
+  {:recently-modified-notes (get-recently-modified-notes
+                              notes
+                              num-recently-modified-notes-to-highlight
+                              num-recently-created-notes-to-highlight)
+   :recently-created-notes
+   (get-recently-created-notes notes num-recently-created-notes-to-highlight)
    :categories-with-recently-created-notes
-   (get-categories-with-recently-created-notes notes)
+   (get-categories-with-recently-created-notes
+     notes
+     num-recently-created-notes-to-highlight)
    :categories-with-recently-modified-notes
-   (get-categories-with-recently-modified-notes notes)})
+   (get-categories-with-recently-modified-notes
+     notes
+     num-recently-modified-notes-to-highlight
+     num-recently-created-notes-to-highlight)})
 
 ; -------------------------------------------------------------------------
 
@@ -300,11 +321,17 @@
            notes))))
 
 (defn make-nested-note-list
-  [notes selected-categories organization-fn]
+  [notes
+   selected-categories
+   organization-fn
+   num-recently-modified-notes-to-highlight
+   num-recently-created-notes-to-highlight]
   (make-nested-note-html
     (organization-fn (get-notes-for-categories notes selected-categories))
     (get-cur-page-note notes)
-    (get-recentcy-data notes)))
+    (get-recentcy-data notes
+                       num-recently-modified-notes-to-highlight
+                       num-recently-created-notes-to-highlight)))
 
 ; Every category gets its own place in the top-level menu, meaning that notes   
 ; with multiple categories will appear in multiple places.)
@@ -387,6 +414,36 @@
                                 (swap! global/include-home-node-in-graph?
                                   not))}]
           "Include home node in graph?"]
+         [:div
+          "Number of recently modified pages to highlight: "
+          [:div
+           @global/num-recently-modified-notes-to-highlight
+           [:input {:type "range"
+                    :min "1"
+                    :max "50"
+                    :class "slider"
+                    :on-change
+                    (fn [event]
+                      (reset! global/num-recently-modified-notes-to-highlight
+                        (js/parseInt (-> event
+                                         .-target
+                                         .-value))))
+                    :value @global/num-recently-modified-notes-to-highlight}]]]
+         [:div
+          "Number of recently created pages to highlight: "
+          [:div
+           @global/num-recently-created-notes-to-highlight
+           [:input {:type "range"
+                    :min "1"
+                    :max "50"
+                    :class "slider"
+                    :on-change
+                    (fn [event]
+                      (reset! global/num-recently-created-notes-to-highlight
+                        (js/parseInt (-> event
+                                         .-target
+                                         .-value))))
+                    :value @global/num-recently-created-notes-to-highlight}]]]
          (let [selected-organization-scheme (first (for [[scheme selected?]
                                                          @organization-scheme
                                                          :when selected?]
@@ -394,7 +451,9 @@
            (make-nested-note-list
              notes
              (get-selected-vars @global/category-selections)
-             (selected-organization-scheme organization-schemes)))
+             (selected-organization-scheme organization-schemes)
+             @global/num-recently-modified-notes-to-highlight
+             @global/num-recently-created-notes-to-highlight))
          [:div
           [:small
            [:em

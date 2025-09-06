@@ -5,6 +5,8 @@
     [website-helpers.test-data]
     [website-helpers.utils :refer [get-url-param-selections]]))
 
+(def num-recently-modified-notes-to-highlight (r/atom 20))
+(def num-recently-created-notes-to-highlight (r/atom 10))
 (def show-unselected-nodes-in-graph? (r/atom true))
 (def include-home-node-in-graph? (r/atom false))
 ; whenever this is updated, the page graph will be redrawn

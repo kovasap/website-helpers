@@ -231,7 +231,9 @@
    include-home-node?
    notes
    selected-categories
-   all-categories]
+   all-categories
+   num-recently-modified-notes-to-highlight
+   num-recently-created-notes-to-highlight]
   (let [starting-idx      9 ; leave room for HOME and LEGEND and
                             ; other legend nodes
         categories        (if (= 0 (count selected-categories))
@@ -257,9 +259,16 @@
                               (reduce concat
                                 (map :modification-unix-timestamps notes))))
         most-recently-modified-paths
-        (set (map :path (n/get-recently-modified-notes notes)))
+        (set (map :path
+               (n/get-recently-modified-notes
+                 notes
+                 num-recently-modified-notes-to-highlight
+                 num-recently-created-notes-to-highlight)))
         most-recently-created-paths
-        (set (map :path (n/get-recently-created-notes notes)))
+        (set (map :path
+               (n/get-recently-created-notes
+                 notes
+                 num-recently-created-notes-to-highlight)))
         idxed-notes       (map-indexed (fn [i n]
                                          (assoc n :idx (+ starting-idx i)))
                                        notes)
@@ -343,6 +352,11 @@
          :label       "legend"}]
        (update-nodes
          (concat idxed-notes (map category-to-node categories-to-idx))
+         (fn [node]
+           (prn (str (:name node)
+                     " opacity="        (:opacity-mod node)
+                     " stroke-opacity=" (:stroke-opacity-mod node)))
+           node)
          prettify-name
          fix-path
          strip-extension
@@ -372,14 +386,20 @@
                {:source 2 :target 5 :value 11}])}))
 
 (defn build-graph-data
-  [show-unselected-nodes? include-home-node? notes-atom category-selections-atom]
+  [show-unselected-nodes?
+   include-home-node?
+   notes-atom
+   category-selections-atom
+   num-recently-modified-notes-to-highlight
+   num-recently-created-notes-to-highlight]
   ;(seconds-taken "Built graph data"
   (-> (notes-to-graph @show-unselected-nodes?
                       @include-home-node?
                       @notes-atom
-                      (get-selected-vars
-                        @category-selections-atom)
-                      (set (keys @category-selections-atom)))
+                      (get-selected-vars @category-selections-atom)
+                      (set (keys @category-selections-atom))
+                      @num-recently-modified-notes-to-highlight
+                      @num-recently-created-notes-to-highlight)
       (update :nodes clj->js)
       (update :links clj->js)))
 
@@ -400,6 +420,8 @@
                     global/show-unselected-nodes-in-graph?
                     global/include-home-node-in-graph?
                     global/notes
-                    global/category-selections)
+                    global/category-selections
+                    global/num-recently-modified-notes-to-highlight
+                    global/num-recently-created-notes-to-highlight)
            "https://kovasap.github.io/"
            (js->clj options :keywordize-keys true)]]))
