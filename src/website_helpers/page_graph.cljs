@@ -185,8 +185,8 @@
                        ; This is a special case we are overloading the "group"
                        ; concept for, since i couldn't figure out how to get a
                        ; new field through the clj->js conversion.
-                       (contains? most-recently-modified-paths (:path node)) 4
-                       (contains? most-recently-created-paths (:path node)) 5
+                       (contains? most-recently-modified-paths (:path node)) 5
+                       (contains? most-recently-created-paths (:path node)) 4
                        (contains? (:categories node) "Important") 5
                        ; A normal page
                        (or (nil? (:children node))
@@ -352,11 +352,11 @@
          :label       "legend"}]
        (update-nodes
          (concat idxed-notes (map category-to-node categories-to-idx))
-         (fn [node]
-           (prn (str (:name node)
-                     " opacity="        (:opacity-mod node)
-                     " stroke-opacity=" (:stroke-opacity-mod node)))
-           node)
+         #_(fn [node]
+             (prn (str (:name node)
+                       " opacity="        (:opacity-mod node)
+                       " stroke-opacity=" (:stroke-opacity-mod node)))
+             node)
          prettify-name
          fix-path
          strip-extension
