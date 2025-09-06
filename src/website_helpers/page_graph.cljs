@@ -329,22 +329,22 @@
          :label       "legend"
          :stroke-opacity-mod 0.5
          :opacity-mod 1}
-        {:name        "Recently Modified Page (double-click to view)"
+        {:name        "Recently Added Page (double-click to view)"
          :idx         6
          :group       4
          :size        20
          :label       "legend"
          :stroke-opacity-mod 0.5
          :opacity-mod 1}
-        {:name        "Recently Added Page (double-click to view)"
-         :idx         6
+        {:name        "Recently Modified Page (double-click to view)"
+         :idx         7
          :group       5
          :size        20
          :label       "legend"
          :stroke-opacity-mod 0.5
          :opacity-mod 1}
         {:name        "Important Page (double-click to view)"
-         :idx         7
+         :idx         8
          :group       6
          :size        20
          :stroke-opacity-mod 0.5
