@@ -250,9 +250,13 @@
                             (map #(count (:modification-unix-timestamps %))
                               notes))
         earliest-mod-time (apply min
-                            (remove nil?
-                              (reduce concat
-                                (map :modification-unix-timestamps notes))))
+                            ; Idk why some things are zero, but they are
+                            ; sometimes only for the deployed website version
+                            ; (not when running locally).
+                            (remove zero?
+                              (remove nil?
+                                (reduce concat
+                                  (map :modification-unix-timestamps notes)))))
         latest-mod-time   (apply max
                             (remove nil?
                               (reduce concat
