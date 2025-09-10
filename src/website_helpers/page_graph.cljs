@@ -249,7 +249,6 @@
         least-mod-num     (apply min
                             (map #(count (:modification-unix-timestamps %))
                               notes))
-        ; TODO remove really old stuff here
         earliest-mod-time (apply min
                             (remove nil?
                               (reduce concat
@@ -285,12 +284,11 @@
                              :tree-path        ""
                              ; hack for group coloring
                              :children         [1 1]})]
-    ; (prn "making " (count notes) " nodes")
-    ; (prn "The most modified page was changed " most-mod-num " times.")
-    ; (prn "The least modified page was changed " least-mod-num " times.")
-    ; (prn "The page changed the earliest was changed at "
-    ; earliest-mod-time)
-    ; (prn "The page changed the latest was changed at " latest-mod-time)
+    (prn "Making " (count notes) " nodes")
+    (prn "The most modified page was changed " most-mod-num " times.")
+    (prn "The least modified page was changed " least-mod-num " times.")
+    (prn "The page changed the earliest was changed at " earliest-mod-time)
+    (prn "The page changed the latest was changed at " latest-mod-time)
     {:nodes
      (concat
        [{:name "Home" :idx 0 :group 1 :size 20 :label "home" :opacity-mod 1}
