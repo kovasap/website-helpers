@@ -12,6 +12,7 @@ clj -A:shadow-cljs watch website_helpers
 ```
 
 Add `/index.html` to the url to open the test page.
+So the full URL should be something like http://localhost:3000/index.html.
 
 ### Building for production
 

@@ -125,6 +125,12 @@
   (.toLocaleString (js/Date. (* timestamp 1000))
                    "en-US"
                    #js {:month "long" :year "numeric"}))
+
+(defn timestamp->day
+  [timestamp]
+  (.toLocaleString (js/Date. (* timestamp 1000))
+                   "en-US"
+                   #js {:month "long" :year "numeric" :day "numeric"}))
   
 (defn month-name-to-index [month-name]
   (case month-name

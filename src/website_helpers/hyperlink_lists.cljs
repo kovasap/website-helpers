@@ -6,12 +6,15 @@
 ; TODO make these not just pull from the sections, but actually make the html so
 ; that we get working links
 
+(defn markdown-path-to-url
+  [path]
+  (-> path
+      (replace "content/" "/")
+      (replace ".md" "/")))
 
 (defn markdown-path-to-html-link
   [path]
-  [:a {:href (-> path
-                 (replace "content/" "/")
-                 (replace ".md" "/"))}
+  [:a {:href (markdown-path-to-url path)}
    (-> path
        (split "/")
        (last)

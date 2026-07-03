@@ -7,9 +7,10 @@
     ; using it so that cljs includes it in the final build
     [website-helpers.graph]
     [website-helpers.test-data]
-    [website-helpers.global]
+    [website-helpers.global :as global]
     [website-helpers.hyperlink-lists :as h]
     [website-helpers.notes :as n]
+    [website-helpers.recent-posts :refer [recent-posts]]
     [website-helpers.utils :refer [my-md->hiccup]]
     [website-helpers.schemas :refer [Hiccup ReagentComponent]]
     [cljs.reader]
@@ -66,6 +67,7 @@
   (fn []
     [:div
       [:p "hi"]
+      [recent-posts @global/notes]
       [page-graph-from-notes {:center-x 300 :center-y 500}]
       [n/random-page]
       [h/categories-and-backlinks "docs/visual-art/inspiration-and-resources.md"]
