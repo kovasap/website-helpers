@@ -35,14 +35,20 @@
     coll
     (take n coll)))
 
-(defn ^:export recent-posts
-  ([] (recent-posts nil @global/notes))
-  ([n] (recent-posts n @global/notes))
-  ([n notes]
-   (fn []
-     (into [:div
-            (->> notes
-                 (sort-by last-modification-time)
-                 (reverse)
-                 (take-all-when-nil n)
-                 (mapv collapsed-post))]))))
+(defn recent-posts
+  [n notes]
+  (fn []
+    (into [:div
+           (->> notes
+                (sort-by last-modification-time)
+                (reverse)
+                (take-all-when-nil n)
+                (mapv collapsed-post))])))
+
+(defn ^:export all-posts
+  []
+  (recent-posts nil @global/notes))
+
+(defn ^:export most-recent-posts
+  [n]
+  (recent-posts n @global/notes))
