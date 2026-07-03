@@ -1,27 +1,28 @@
 (ns website-helpers.core
-  (:require
-    [website-helpers.filterable-items :refer [make-aggregated-items
-                                              example-experiences]]
-    [website-helpers.page-graph :refer [page-graph-from-notes]]
-    ; note that we need to include everything here even if we aren't directly
-    ; using it so that cljs includes it in the final build
-    [website-helpers.graph]
-    [website-helpers.test-data]
-    [website-helpers.global :as global]
-    [website-helpers.hyperlink-lists :as h]
-    [website-helpers.notes :as n]
-    [website-helpers.recent-posts :refer [all-posts]]
-    [website-helpers.utils :refer [my-md->hiccup]]
-    [website-helpers.schemas :refer [Hiccup ReagentComponent]]
-    [cljs.reader]
-    [clojure.string :refer [split replace join includes? capitalize]]
-    [clojure.set :refer [union intersection subset?]]
-    [clojure.walk :refer [postwalk]]
-    [reagent.dom :as rd]
-    [reagent.dom.server :as rds]
-    [reagent.core :as r]
-    [malli.dev.cljs :as dev]
-    [malli.dev.pretty :as pretty]))
+  (:require [website-helpers.filterable-items
+             :refer
+             [make-aggregated-items example-experiences]]
+            [website-helpers.page-graph :refer [page-graph-from-notes]]
+            ; note that we need to include everything here even if we
+            ; aren't directly using it so that cljs includes it in the
+            ; final build
+            [website-helpers.graph]
+            [website-helpers.test-data]
+            [website-helpers.global :as global]
+            [website-helpers.hyperlink-lists :as h]
+            [website-helpers.notes :as n]
+            [website-helpers.recent-posts :refer [most-recent-posts all-posts]]
+            [website-helpers.utils :refer [my-md->hiccup]]
+            [website-helpers.schemas :refer [Hiccup ReagentComponent]]
+            [cljs.reader]
+            [clojure.string :refer [split replace join includes? capitalize]]
+            [clojure.set :refer [union intersection subset?]]
+            [clojure.walk :refer [postwalk]]
+            [reagent.dom :as rd]
+            [reagent.dom.server :as rds]
+            [reagent.core :as r]
+            [malli.dev.cljs :as dev]
+            [malli.dev.pretty :as pretty]))
 
 
 (prn "Loaded website helpers!")
@@ -67,6 +68,7 @@
   (fn []
     [:div
       [:p "hi"]
+      [most-recent-posts 1]
       [all-posts]
       [page-graph-from-notes {:center-x 300 :center-y 500}]
       [n/random-page]
