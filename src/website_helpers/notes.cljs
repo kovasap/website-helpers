@@ -389,6 +389,16 @@
            "Select Categories"
            select-category!
            "checkbox"]]
+         (let [selected-organization-scheme (first (for [[scheme selected?]
+                                                         @organization-scheme
+                                                         :when selected?]
+                                                     scheme))]
+           (make-nested-note-list
+             notes
+             (get-selected-vars @global/category-selections)
+             (selected-organization-scheme organization-schemes)
+             @global/num-recently-modified-notes-to-highlight
+             @global/num-recently-created-notes-to-highlight))
          [:div
           [dropdown-select-list
            organization-scheme
@@ -450,16 +460,6 @@
                                          .-target
                                          .-value))))
                     :value @global/num-recently-created-notes-to-highlight}]]]
-         (let [selected-organization-scheme (first (for [[scheme selected?]
-                                                         @organization-scheme
-                                                         :when selected?]
-                                                     scheme))]
-           (make-nested-note-list
-             notes
-             (get-selected-vars @global/category-selections)
-             (selected-organization-scheme organization-schemes)
-             @global/num-recently-modified-notes-to-highlight
-             @global/num-recently-created-notes-to-highlight))
          [:div
           [:small
            [:em
