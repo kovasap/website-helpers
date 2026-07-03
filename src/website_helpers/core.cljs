@@ -64,16 +64,18 @@
 ;            (md->hiccup (:markdown note))])))
 
 ; Only visible when building this repo, useful for testing
-(defn home-page []
-  (fn []
-    [:div
-      [:p "hi"]
-      [most-recent-posts 1]
-      [all-posts]
-      [page-graph-from-notes {:center-x 300 :center-y 500}]
-      [n/random-page]
-      [h/categories-and-backlinks "docs/visual-art/inspiration-and-resources.md"]
-      [n/make-index-menu]]))
+(defn home-page
+  []
+  (fn [] [:div
+          [:p "hi"]
+          [most-recent-posts 1]
+          [all-posts]
+          [page-graph-from-notes
+           {:center-x 300 :center-y 500 :legend-x 150 :legend-y 250}]
+          [n/random-page]
+          [h/categories-and-backlinks
+           "docs/visual-art/inspiration-and-resources.md"]
+          [n/make-index-menu]]))
       ; [make-aggregated-items example-experiences]]))
 
 (website-helpers.global/set-global-notes 

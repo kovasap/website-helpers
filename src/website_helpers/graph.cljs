@@ -32,7 +32,7 @@
 ; parameters.
 (defn create-sim
   [viz-state]
-  (let [{:keys [width height center-x center-y]} @viz-state]
+  (let [{:keys [width height center-x center-y legend-x legend-y]} @viz-state]
     (doto (js/d3.forceSimulation)
       (.stop)
       (.force "link"
@@ -68,15 +68,15 @@
                   (.strength 1.1)))
       ; This keeps legend nodes above the chart to the side.
       (.force "legendx"
-              (-> (js/d3.forceX (* 0.5 center-x))
+              (-> (js/d3.forceX legend-x)
                   (.strength #(if (= "legend" (.-label %)) 0.2 0))))
       (.force "legendy"
-              (-> (js/d3.forceY (* 0.5 center-y))
+              (-> (js/d3.forceY legend-y)
                   (.strength #(if (= "legend" (.-label %)) 0.2 0))))
       ; Pull the singular legend node up to separate it from the rest of
       ; the legend
       (.force "legendnodex"
-              (-> (js/d3.forceX 0)
+              (-> (js/d3.forceX (+ 100 legend-x))
                   (.strength #(if (= "Legend" (.-name %)) 0.3 0))))
       (.on "tick"
            (fn []
@@ -150,6 +150,8 @@
                                      :height         1500
                                      :center-x       1000
                                      :center-y       750
+                                     :legend-x       500
+                                     :legend-y       350
                                      ; The initial "temperature" of the
                                      ; simulation.
                                      :initial-alpha  4
