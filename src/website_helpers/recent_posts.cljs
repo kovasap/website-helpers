@@ -30,11 +30,12 @@
          "..."]]])))
 
 (defn ^:export recent-posts
-  ([]
-   (recent-posts @global/notes))
+  ([] (recent-posts @global/notes))
   ([notes]
-   (let [notes-by-month ((:most-recently-changed organization-schemes) notes)]
-     (into [:div]
-           (for [[month group] notes-by-month]
-             (into [:div] ; [:h2 month]]
-                   (mapv collapsed-post (:notes group))))))))
+   (fn []
+     (let [notes-by-month ((:most-recently-changed organization-schemes)
+                           notes)]
+       (into [:div]
+             (for [[month group] notes-by-month]
+               (into [:div] ; [:h2 month]]
+                     (mapv collapsed-post (:notes group)))))))))
