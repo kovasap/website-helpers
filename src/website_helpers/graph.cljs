@@ -88,7 +88,7 @@
               (-> (js/d3.forceX (+ legend-title-offset-x legend-x))
                   (.strength #(if (= "Legend" (.-name %)) 0.3 0))))
       (.force "legendnodey"
-              (-> (js/d3.forceY (+ legend-title-offset-y legend-x))
+              (-> (js/d3.forceY (+ legend-title-offset-y legend-y))
                   (.strength #(if (= "Legend" (.-name %)) 0.3 0))))
       (.on "tick"
            (fn []
