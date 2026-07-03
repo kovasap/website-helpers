@@ -29,13 +29,20 @@
         [:a {:href (markdown-path-to-url path)}
          "..."]]])))
 
+(defn take-all-when-nil
+  [n coll]
+  (if (nil? n)
+    coll
+    (take n coll)))
+
 (defn ^:export recent-posts
-  ([] (recent-posts @global/notes))
-  ([notes]
+  ([] (recent-posts nil @global/notes))
+  ([n] (recent-posts n @global/notes))
+  ([n notes]
    (fn []
-     (let [notes-by-month ((:most-recently-changed organization-schemes)
-                           notes)]
-       (into [:div]
-             (for [[month group] notes-by-month]
-               (into [:div] ; [:h2 month]]
-                     (mapv collapsed-post (:notes group)))))))))
+     (into [:div
+            (->> notes
+                 (sort-by last-modification-time)
+                 (reverse)
+                 (take-all-when-nil n)
+                 (mapv collapsed-post))]))))
