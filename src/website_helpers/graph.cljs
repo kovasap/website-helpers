@@ -32,7 +32,15 @@
 ; parameters.
 (defn create-sim
   [viz-state]
-  (let [{:keys [width height center-x center-y legend-x legend-y]} @viz-state]
+  (let [{:keys [width
+                height
+                center-x
+                center-y
+                legend-x
+                legend-y
+                legend-title-offset-x
+                legend-title-offset-y]}
+        @viz-state]
     (doto (js/d3.forceSimulation)
       (.stop)
       (.force "link"
@@ -58,9 +66,10 @@
                                        (not (= "legend" (.-label %))))
                                 0.02
                                 0))))
-      ; Ideally we would use https://github.com/adel-tahir/d3-ellipseCollide
-      ; here and forgo the multilining stuff that is being used to try to get
-      ; more circular nodes.
+      ; Ideally we would use
+      ; https://github.com/adel-tahir/d3-ellipseCollide here and forgo the
+      ; multilining stuff that is being used to try to get more circular
+      ; nodes.
       (.force "collide"
               (-> (js/d3.forceCollide
                     #(* (if (is-distinguished-node? %) 1.2 1)
@@ -76,7 +85,10 @@
       ; Pull the singular legend node up to separate it from the rest of
       ; the legend
       (.force "legendnodex"
-              (-> (js/d3.forceX (+ 100 legend-x))
+              (-> (js/d3.forceX (+ legend-title-offset-x legend-x))
+                  (.strength #(if (= "Legend" (.-name %)) 0.3 0))))
+      (.force "legendnodey"
+              (-> (js/d3.forceX (+ legend-title-offset-y legend-x))
                   (.strength #(if (= "Legend" (.-name %)) 0.3 0))))
       (.on "tick"
            (fn []
@@ -152,6 +164,8 @@
                                      :center-y       750
                                      :legend-x       500
                                      :legend-y       350
+                                     :legend-title-offset-x       50
+                                     :legend-title-offset-y       50
                                      ; The initial "temperature" of the
                                      ; simulation.
                                      :initial-alpha  4
